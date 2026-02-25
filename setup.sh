@@ -24,6 +24,7 @@ declare -a PLUGIN_KEYS=(
   "git-onboarding@git-for-everyone"
   "frontend-design@claude-plugins-official"
   "commit-commands@claude-plugins-official"
+  "pr-review-toolkit@claude-plugins-official"
 )
 
 declare -a PLUGIN_NAMES=(
@@ -33,6 +34,7 @@ declare -a PLUGIN_NAMES=(
   "git-onboarding    — Git 초보자 단계별 온보딩"
   "frontend-design   — 프로덕션 수준 프론트엔드 UI 생성"
   "commit-commands   — commit·push·PR 자동화"
+  "pr-review-toolkit — PR 리뷰 특화 (코드리뷰·타입분석·테스트·사일런트 버그)"
 )
 
 # 선택 배열 초기화
@@ -140,4 +142,20 @@ done
 
 echo ""
 echo "완료! Claude Code를 재시작하면 플러그인이 활성화됩니다."
+echo ""
+
+# 추가 스킬 설치 안내
+echo "─────────────────────────────────────────────"
+echo ""
+echo "추가로 agent-tower 스킬도 설치할까요?"
+echo "멀티에이전트 토론·합의 (council·debate·deliberate) 워크플로우입니다."
+echo ""
+read -p "agent-tower 설치? (y/n): " install_tower
+if [ "$install_tower" = "y" ] || [ "$install_tower" = "Y" ]; then
+  npx skills add bayramannakov/agent-tower-plugin --skill agent-tower-plugin -g -a claude-code
+  echo "  ✅ agent-tower-plugin 설치됨"
+fi
+
+echo ""
+echo "모든 설정이 완료되었습니다!"
 echo ""

@@ -107,6 +107,8 @@ bash <(curl -s https://raw.githubusercontent.com/eoash/ash-skills/main/setup.sh)
 | `git-onboarding` | Git 초보자 단계별 온보딩 |
 | `frontend-design` | 프로덕션 수준 프론트엔드 UI 생성 |
 | `commit-commands` | commit·push·PR 자동화 |
+| `pr-review-toolkit` | PR 리뷰 특화 (코드리뷰·타입분석·테스트·사일런트 버그 탐지) |
+| `agent-tower` | 멀티에이전트 토론·합의 (council·debate·deliberate) |
 
 ---
 
