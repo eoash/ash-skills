@@ -1,7 +1,7 @@
 # Ash Skills
 
 안서현(Seohyun Ahn)의 Claude Code 스킬 모음입니다.
-22개 스킬 — 콘텐츠 소화, 세션 관리, 개발 자동화, 어드바이저, 교육 커리큘럼까지.
+27개 스킬 — 콘텐츠 소화, 세션 관리, 개발 자동화, 어드바이저, 업무 자동화, 교육 커리큘럼까지.
 
 ---
 
@@ -52,6 +52,7 @@ npx skills add eoash/ash-skills --all -g -a claude-code
 | `my-history-insight` | 과거 세션 기록 분석 → 패턴·인사이트 추출 | `/my-history-insight` |
 | `my-session-analyzer` | 스킬 실행 기록을 SKILL.md와 비교 → PASS/FAIL 검증 | `/my-session-analyzer` |
 | `my-context-sync` | Slack·Notion·Gmail·Calendar·ClickUp·GitHub 컨텍스트 통합 | `/my-context-sync` |
+| `slack-to-gcal` | Slack 이모지 반응자 → Google Calendar 이벤트 자동 초대 | `/slack-to-gcal` |
 
 ### 개발 & 계획
 
@@ -61,6 +62,7 @@ npx skills add eoash/ash-skills --all -g -a claude-code
 | `opusplan` | Opus가 설계 + Sonnet이 실행하는 2단계 개발 | `/opusplan` |
 | `ralph-loop` | 동일 작업을 반복 실행하며 점진적 개선하는 자율 루프 | `/ralph-loop` |
 | `my-dev-team` | 4-에이전트 팀 (PM→아키텍트→개발자→리뷰어) 자동 개발 파이프라인 | `/my-dev-team` |
+| `my-townhall-agency` | 타운홀 슬라이드 4-에이전트 자동 생성 (리서처→요약→디자인→개발) | `/my-townhall-agency` |
 
 ### 어드바이저 (커스터마이징 필요)
 
@@ -74,6 +76,9 @@ npx skills add eoash/ash-skills --all -g -a claude-code
 | `my-code-reviewer` | 코드 리뷰 어드바이저 (아키텍처 진단, SOLID 검토, 리팩터링) | `/my-code-reviewer` |
 | `my-legal-advisor` | 법률 어드바이저 (계약 검토, 컴플라이언스, 리스크 평가) | `/my-legal-advisor` |
 | `my-finance-advisor` | 재무 어드바이저 (AR 전략, 캐시플로우, FX 판단) | `/my-finance-advisor` |
+| `my-legal-email-analyzer` | 변호사 메일 스레드 분석 → 요점 추출 + 답장 초안 생성 | `/my-legal-email-analyzer` |
+| `my-gmail-attachment-extractor` | Gmail 첨부파일 자동 다운로드 + 파일 타입별 처리 | `/my-gmail-attachment-extractor` |
+| `flip-tracker` | Flip 투자자 서명 회신 현황 Gmail 자동 추적 | `/flip-tracker` |
 
 ### AI Native Camp 교육
 

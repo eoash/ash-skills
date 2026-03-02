@@ -1,65 +1,133 @@
 ---
 name: opusplan
-description: Opus가 설계하고 Sonnet이 실행하는 2단계 개발 skill. 복잡한 구현 작업에서 설계 품질을 높이기 위해 사용. "/opusplan", "opus로 설계해줘", "opusplan" 요청에 사용.
+description: Opus가 계획, Sonnet이 구현. 복잡한 작업을 Opus에게 설계시킨 뒤 현재 세션에서 단계별 실행. "opusplan", "opus 계획", "opus plan" 요청에 사용.
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+  - Edit
+  - Write
+  - AskUserQuestion
+  - Task
 ---
 
-# OpusPlan Skill
+# opusplan
 
-이 skill은 **2단계 구조**로 작동한다.
+**Opus가 계획, Sonnet이 구현** — 복잡한 작업을 위한 2단계 워크플로우.
 
-1. **설계 단계 (Opus)** — Task tool의 Plan 에이전트를 `model: opus`로 호출하여 구현 계획 수립
-2. **실행 단계 (Sonnet)** — 수립된 계획을 현재 모델(Sonnet)이 실행
+## Workflow
+
+1. **Phase 1 — Planning (Opus)**: Claude Opus가 구조화된 단계별 구현 계획 생성
+2. **Phase 2 — Review**: 계획을 사용자에게 보여주고 확인
+3. **Phase 3 — Implementation (Sonnet)**: 현재 세션에서 계획대로 단계별 실행
+
+## Why
+
+- Opus는 깊은 사고와 종합적인 설계에 강함
+- Sonnet은 명확한 지시를 빠르게 실행하는 데 강함
+- 한 번 깊게 생각하고, 효율적으로 실행
+
+## Usage
+
+```
+/opusplan "JWT 인증을 Express API에 추가해줘"
+/opusplan "AR 매칭 로직 정확도 개선" --plan-only
+/opusplan "Slack 알림 에러 처리 강화" --no-confirm
+/opusplan "DB 스키마 리팩토링" --context ./docs/schema.md
+```
+
+## Arguments
+
+Parse from $ARGUMENTS:
+- **Task** (required) — 계획하고 구현할 작업
+- `--no-confirm` — 확인 없이 바로 구현
+- `--plan-only` — 계획만 생성, 구현 안 함
+- `--context PATH` — 추가 컨텍스트 파일/디렉토리
+
+## Phase 1: Generate Plan with Opus
+
+Run the planning script. Use `--output` to write to a temp file (Windows 인코딩 이슈 방지):
+
+```bash
+python "${SKILL_DIR}/scripts/run_opusplan.py" --task "TASK_HERE" --output "/tmp/opusplan_result.json" [--context PATH]
+```
+
+Then read the result file using the Read tool: `/tmp/opusplan_result.json`
+
+While waiting, show a status message: "Opus가 계획을 수립 중입니다..."
+
+**IMPORTANT**: Use `python` (not `python3`) on Windows.
+
+## Phase 2: Present and Confirm Plan
+
+Parse the JSON from the result file and display:
 
 ---
 
-## 실행 프로토콜
+**Opus Implementation Plan**
 
-### Step 1: 작업 파악
+**Task:** [task description]
 
-skill 호출 시 사용자의 요청이 명확하지 않으면 AskUserQuestion으로 작업 내용을 확인한다.
-요청이 명확하면 바로 Step 2로 진행한다.
+**Overview:** [brief summary]
 
-### Step 2: Opus로 설계
+**Steps:**
+1. [Step 1 title]
+   - Details...
+2. [Step 2 title]
+   - Details...
 
-Task tool을 아래 설정으로 호출한다:
-
-```
-subagent_type: "Plan"
-model: "opus"
-prompt: "[사용자 요청 내용]에 대한 구현 계획을 수립해줘.
-  - 어떤 파일을 수정/생성할지
-  - 각 단계별 구현 순서
-  - 고려해야 할 엣지 케이스와 트레이드오프
-  를 포함한 상세 계획을 작성해줘."
-```
-
-### Step 3: 계획 검토 및 승인
-
-Opus가 수립한 계획을 사용자에게 보여주고 AskUserQuestion으로 승인을 요청한다.
-
-```
-options:
-  - "계획대로 실행" — Sonnet이 즉시 실행
-  - "계획 수정 후 실행" — 수정 사항을 반영해 재계획
-  - "취소" — 실행하지 않음
-```
-
-### Step 4: Sonnet이 실행
-
-사용자가 승인하면 수립된 계획을 바탕으로 현재 모델(Sonnet)이 실제 구현을 진행한다.
-계획의 각 단계를 순서대로 실행하며, 완료 후 결과를 요약한다.
+**Complexity:** [simple/moderate/complex]
+**Files:** [list if known]
+**Risks:** [potential issues]
 
 ---
 
-## 언제 사용하면 좋은가
+Then ask for confirmation (unless `--no-confirm`):
 
-- 여러 파일에 걸친 복잡한 기능 구현
-- 아키텍처 결정이 필요한 작업
-- 리팩토링처럼 파급 효과가 큰 변경
-- 처음 접하는 코드베이스에서의 작업
+Use AskUserQuestion:
+- question: "이 계획대로 구현을 시작할까요?"
+- header: "실행 확인"
+- options:
+  - label: "네, 시작하세요 (Recommended)", description: "계획대로 바로 구현합니다"
+  - label: "계획만 저장", description: "구현 없이 계획 파일만 저장합니다"
+  - label: "계획 수정 후 실행", description: "계획을 수정한 다음 실행합니다"
 
-## 언제 사용하지 않아도 되는가
+If `--plan-only`, save plan to file and stop.
 
-- 단순 버그 수정
-- 파일 1~2개만 수정하는 간단한 작업
-- 요구사항이 매우 명확하고 구현 방법이 하나뿐인 경우
+## Phase 3: Implement the Plan
+
+Execute each step sequentially:
+
+1. Announce: "**Step N/Total: [step title]**"
+2. Execute using appropriate tools (Read, Edit, Write, Bash, etc.)
+3. Verify step succeeded
+4. Next step
+
+**Guidelines:**
+- Follow the plan faithfully, adapt if unexpected issues arise
+- If a step fails, explain and fix or skip with explanation
+- After all steps, provide summary
+
+## Output Format
+
+### Success:
+
+**opusplan Complete**
+
+**Plan by:** Claude Opus | **Implemented by:** Claude Sonnet
+
+**Steps completed:** N/N
+
+**Summary:** [what was accomplished]
+
+**Files modified:**
+- path/to/file1
+- path/to/file2
+
+### Partial:
+
+**opusplan — Partial Completion**
+
+**Completed:** ✓ Step 1, ✓ Step 2
+**Not completed:** ✗ Step 3 (reason)
