@@ -1,7 +1,7 @@
 # Ash Skills
 
 안서현(Seohyun Ahn)의 Claude Code 스킬 모음입니다.
-27개 스킬 — 콘텐츠 소화, 세션 관리, 개발 자동화, 어드바이저, 업무 자동화, 교육 커리큘럼까지.
+50개 스킬 — 콘텐츠 소화, 세션 관리, 개발 자동화, 어드바이저, 문서/오피스, 한국형 비즈니스, 디자인, 교육까지.
 
 ---
 
@@ -42,7 +42,40 @@ npx skills add eoash/ash-skills --all -g -a claude-code
 | `my-fetch-youtube` | YouTube URL → 자막 추출 → 요약·인사이트·전체 번역 | `/my-fetch-youtube [URL]` |
 | `my-fetch-tweet` | X/Twitter URL → 트윗 원문 → 요약·인사이트·전체 번역 | `/my-fetch-tweet [URL]` |
 | `my-content-digest` | 콘텐츠를 Quiz-First 방식으로 학습 (퀴즈 → 피드백 → 공부) | `/my-content-digest` |
+| `instagram-card-news` | Instagram 카드뉴스 자동 생성 (8개 테마, HTML→PNG 렌더링) | 프로젝트 내 실행 |
+
+### 문서 & 오피스
+
+| 스킬 | 설명 | 사용법 |
+|------|------|--------|
 | `hwpx` | 한글(HWPX) 문서 생성·읽기·편집 | `/hwpx` |
+| `docx` | Word 문서(.docx) 생성·읽기·편집·레드라인 | `/docx` |
+| `pptx` | PowerPoint(.pptx) 생성·편집·썸네일 | `/pptx` |
+| `xlsx` | Excel(.xlsx) 생성·편집·수식 재계산 | `/xlsx` |
+| `pdf` | PDF 읽기·폼 채우기·이미지 변환 | `/pdf` |
+
+### 한국형 비즈니스 문서
+
+| 스킬 | 설명 | 사용법 |
+|------|------|--------|
+| `korean-biz-docs` | 주간보고서·기안서·품의서·회의록 등 한국 직장인 문서 자동 생성 | `/korean-biz-docs` |
+| `biz-email-writer` | 비즈니스 이메일 격식 자동 조절, 한영 이메일 작성 | `/biz-email-writer` |
+| `korean-translator` | 업종별 전문용어 지원 비즈니스 한영/영한 번역 | `/korean-translator` |
+| `meeting-minutes` | 회의록 자동 정리 (참석자·안건·결정사항·액션아이템) | `/meeting-minutes` |
+| `excel-automation` | 엑셀 반복 업무 자동화 (매출 집계, 급여 계산, 피벗) | `/excel-automation` |
+| `proposal-maker` | B2B 제안서·견적서·입찰 제안서 생성 | `/proposal-maker` |
+| `data-report-generator` | 엑셀/CSV → 한국식 보고서 양식 시각화 리포트 | `/data-report-generator` |
+| `project-tracker` | WBS·간트차트·진행률 대시보드·이슈 트래커 | `/project-tracker` |
+| `portfolio-builder` | 이력서·자기소개서·포트폴리오·링크드인 최적화 | `/portfolio-builder` |
+
+### 디자인 & 프레젠테이션
+
+| 스킬 | 설명 | 사용법 |
+|------|------|--------|
+| `ppt-design-system` | Pretendard + 명조체 한국형 PPT 디자인 시스템 | `/ppt-design-system` |
+| `svg-diagram` | SVG 도식화 & Mermaid → SVG 변환 (프로세스·조직도·타임라인) | `/svg-diagram` |
+| `design-md` | Stitch 프로젝트 → DESIGN.md 디자인 시스템 분석 | `/design-md` |
+| `prompt-engineer` | AI 프롬프트 설계 (CoT, 퓨샷, 메타프롬프트 등) | `/prompt-engineer` |
 
 ### 세션 & 워크플로우 관리
 
@@ -63,6 +96,12 @@ npx skills add eoash/ash-skills --all -g -a claude-code
 | `ralph-loop` | 동일 작업을 반복 실행하며 점진적 개선하는 자율 루프 | `/ralph-loop` |
 | `my-dev-team` | 4-에이전트 팀 (PM→아키텍트→개발자→리뷰어) 자동 개발 파이프라인 | `/my-dev-team` |
 | `my-townhall-agency` | 타운홀 슬라이드 4-에이전트 자동 생성 (리서처→요약→디자인→개발) | `/my-townhall-agency` |
+| `agent-browser` | 브라우저 자동화 CLI (인증·세션관리·프로파일링·녹화) | `/agent-browser` |
+| `agent-tower-plugin` | 멀티 AI 에이전트 토론·합의 (Claude, Codex, Gemini) | `/agent-tower` |
+| `find-skills` | 스킬 검색·설치 도우미 | `/find-skills` |
+| `remotion-best-practices` | Remotion 영상 생성 가이드 (애니메이션·자막·오디오 등) | `/remotion-best-practices` |
+| `vercel-react-best-practices` | React/Next.js 성능 최적화 가이드 (Vercel Engineering) | `/vercel-react-best-practices` |
+| `web-design-guidelines` | 웹 UI 접근성·디자인 가이드라인 리뷰 | `/web-design-guidelines` |
 
 ### 어드바이저 (커스터마이징 필요)
 
