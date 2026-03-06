@@ -1,0 +1,71 @@
+[
+  {
+    "slide": 1,
+    "type": "cover",
+    "headline": "AI를 쓰는\n5단계가\n있습니다",
+    "subtext": "AI Native 로드맵 EP.06"
+  },
+  {
+    "slide": 2,
+    "type": "content-badge",
+    "badge_text": "어디까지 왔나요",
+    "headline": "대부분 1단계에\n머물러 있습니다",
+    "body": "ChatGPT에 질문하고 답변 복사\n이건 전체의 20%일 뿐입니다",
+    "subtext": ""
+  },
+  {
+    "slide": 3,
+    "type": "content-list",
+    "headline": "<span class='highlight'>AI Native</span>\n5단계 로드맵",
+    "item1": "1단계 Chat — AI에게 질문한다",
+    "item2": "2단계 Code — AI가 도구를 쓴다",
+    "item3": "3단계 Agent — AI가 역할을 맡는다",
+    "item4": "4단계 Orchestration — AI를 조합한다",
+    "item5": "5단계 Full Auto — AI가 자율로 일한다"
+  },
+  {
+    "slide": 4,
+    "type": "content-steps",
+    "headline": "EP.01~05에서\n배운 것",
+    "step1": "맥락을 설계하라 (EP.01~02)",
+    "step2": "전문가 팀을 세워라 (EP.03)",
+    "step3": "조합하고 동시에 돌려라 (EP.04~05)"
+  },
+  {
+    "slide": 5,
+    "type": "content-highlight",
+    "headline": "최종 단계",
+    "emphasis": "AI가 자율로 일한다",
+    "body": "에이전트가 알아서 실행하고\n결과를 보고합니다\n당신은 검토만 하면 됩니다",
+    "subtext": ""
+  },
+  {
+    "slide": 6,
+    "type": "content-split",
+    "headline": "도구 사용자 vs AI Native",
+    "left_title": "도구 사용자",
+    "left_body": "AI에게 질문한다\n답변을 복사한다\n매번 반복한다",
+    "right_title": "AI Native",
+    "right_body": "시스템을 설계한다\nAI 팀이 일한다\n나는 검토한다",
+    "subtext": ""
+  },
+  {
+    "slide": 7,
+    "type": "content",
+    "headline": "시작하는 법은\n간단합니다",
+    "body": "오늘 CLAUDE.md 하나 만드세요\n거기에 당신이 누군지 쓰세요\n그것이 AI Native의 첫 걸음입니다"
+  },
+  {
+    "slide": 8,
+    "type": "content-stat",
+    "headline": "이 시리즈를 기억하세요",
+    "emphasis": "도구 < 시스템",
+    "body": "AI를 잘 쓰는 게 아니라\nAI 시스템을 설계하는 겁니다"
+  },
+  {
+    "slide": 9,
+    "type": "cta",
+    "headline": "오늘부터 시작하세요",
+    "cta_text": "이 시리즈를 저장하고 CLAUDE.md부터 만들어보세요"
+  }
+]

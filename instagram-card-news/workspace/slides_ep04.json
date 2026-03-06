@@ -1,0 +1,71 @@
+[
+  {
+    "slide": 1,
+    "type": "cover",
+    "headline": "AI를 섞으면\n일어나는 일",
+    "subtext": "AI Native 로드맵 EP.04"
+  },
+  {
+    "slide": 2,
+    "type": "content-badge",
+    "badge_text": "하나만 사용",
+    "headline": "하나의 AI에만\n의존하고 있죠?",
+    "body": "Claude만, ChatGPT만, Gemini만\n하나에 올인하고 있으면\n그 AI의 한계가 내 한계가 됩니다",
+    "subtext": ""
+  },
+  {
+    "slide": 3,
+    "type": "content",
+    "headline": "오케스트라에는\n지휘자가 있습니다",
+    "body": "바이올린, 피아노, 드럼\n따로 연주하면 소음입니다\n지휘자가 조합하면 음악이 됩니다"
+  },
+  {
+    "slide": 4,
+    "type": "content-split",
+    "headline": "하나만 쓰기 vs 조합하기",
+    "left_title": "하나의 AI",
+    "left_body": "모든 걸 맡기면\n그 AI의 한계가\n곧 내 한계",
+    "right_title": "여러 AI 조합",
+    "right_body": "각자 잘하는 걸 맡기면\n한계가 사라지고\n시너지가 생긴다",
+    "subtext": ""
+  },
+  {
+    "slide": 5,
+    "type": "content-steps",
+    "headline": "오케스트레이션\n<span class='highlight'>이렇게</span> 합니다",
+    "step1": "각 AI의 강점을 파악한다",
+    "step2": "역할을 분배한다",
+    "step3": "하나의 흐름으로 연결한다"
+  },
+  {
+    "slide": 6,
+    "type": "content-list",
+    "headline": "AI마다 <span class='highlight'>강점</span>이\n다릅니다",
+    "item1": "Claude — 깊은 분석, 코딩, 추론",
+    "item2": "ChatGPT — 창의적 글쓰기, 아이디어",
+    "item3": "Gemini — 실시간 검색, 멀티모달",
+    "item4": "Perplexity — 출처 기반 리서치",
+    "item5": "최고를 고르지 말고, 조합하세요"
+  },
+  {
+    "slide": 7,
+    "type": "content-highlight",
+    "headline": "EP.03의 팀이\n여기서 진화합니다",
+    "emphasis": "같은 AI 팀에서 다른 AI 조합으로",
+    "body": "한 AI 안의 전문가에서\n여러 AI의 강점 조합으로\n시너지가 폭발합니다",
+    "subtext": ""
+  },
+  {
+    "slide": 8,
+    "type": "content-stat",
+    "headline": "오늘 기억할 한 가지",
+    "emphasis": "선택 < 조합",
+    "body": "어떤 AI가 최고인지 고르는 게 아니라\n강점을 조합하는 겁니다"
+  },
+  {
+    "slide": 9,
+    "type": "cta",
+    "headline": "다음 편 예고",
+    "cta_text": "EP.05 AI가 조합되면 이제 동시에 움직이게 할 차례다"
+  }
+]

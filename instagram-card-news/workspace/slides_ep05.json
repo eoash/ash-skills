@@ -1,0 +1,67 @@
+[
+  {
+    "slide": 1,
+    "type": "cover",
+    "headline": "한 번에 하나씩\n시키고 있다면",
+    "subtext": "AI Native 로드맵 EP.05"
+  },
+  {
+    "slide": 2,
+    "type": "content-badge",
+    "badge_text": "줄 서서 대기",
+    "headline": "하나 끝나면\n다음 하나 시키죠?",
+    "body": "리서치 끝나면 정리하고\n정리 끝나면 검토하고\n줄 세워서 순서대로",
+    "subtext": ""
+  },
+  {
+    "slide": 3,
+    "type": "content",
+    "headline": "공사 현장에서는\n동시에 일합니다",
+    "body": "배관팀 전기팀 인테리어팀이\n동시에 각자의 일을 합니다\n끝날 때까지 기다리지 않습니다\nAI도 똑같이 할 수 있습니다"
+  },
+  {
+    "slide": 4,
+    "type": "content-split",
+    "headline": "순서대로 vs 동시에",
+    "left_title": "순서대로",
+    "left_body": "A 끝나면 B\nB 끝나면 C\n3시간 걸린다",
+    "right_title": "동시에",
+    "right_body": "A + B + C 동시 실행\n결과를 합치면\n1시간이면 끝",
+    "subtext": ""
+  },
+  {
+    "slide": 5,
+    "type": "content-steps",
+    "headline": "동시 실행,\n<span class='highlight'>이렇게</span> 합니다",
+    "step1": "독립적인 작업을 나눈다",
+    "step2": "각각 동시에 실행한다",
+    "step3": "결과를 하나로 합친다"
+  },
+  {
+    "slide": 6,
+    "type": "content",
+    "headline": "실제로 이렇게 씁니다",
+    "body": "리서치 + 디자인 + 카피를\n3개 에이전트가 동시에 작업\n결과를 합치면\n3시간이 30분이 됩니다"
+  },
+  {
+    "slide": 7,
+    "type": "content-highlight",
+    "headline": "EP.04의 조합이\n여기서 가속됩니다",
+    "emphasis": "조합에 속도를 더한다",
+    "body": "여러 AI를 조합하는 것에서\n동시에 움직이게 하면\n시간이 압축됩니다",
+    "subtext": ""
+  },
+  {
+    "slide": 8,
+    "type": "content-stat",
+    "headline": "오늘 기억할 한 가지",
+    "emphasis": "순서대로 < 동시에",
+    "body": "하나씩 시키는 게 아니라\n동시에 돌리는 겁니다"
+  },
+  {
+    "slide": 9,
+    "type": "cta",
+    "headline": "다음 편 예고",
+    "cta_text": "EP.06 지금까지 배운 모든 것을 하나의 로드맵으로 완성한다"
+  }
+]

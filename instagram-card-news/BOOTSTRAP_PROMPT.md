@@ -1,0 +1,503 @@
+# Instagram 카드뉴스 생성기 — 부트스트랩 프롬프트
+
+> 빈 폴더에서 Claude Code를 열고, 아래 프롬프트를 **그대로 복사-붙여넣기**하면 프로젝트 전체가 자동 생성됩니다.
+
+---
+
+## 사용법
+
+1. 빈 폴더를 만들고 이동합니다:
+```bash
+mkdir instagram-card-news && cd instagram-card-news
+```
+
+2. Claude Code를 실행합니다:
+```bash
+claude
+```
+
+3. 아래 프롬프트를 **전체 복사**하여 붙여넣기합니다.
+
+---
+
+## 프롬프트 (아래 전체를 복사하세요)
+
+```
+Instagram 카드뉴스 자동 생성 프로젝트를 처음부터 만들어줘. 팀 에이전트를 활용해서 병렬로 빠르게 세팅해줘.
+
+## 프로젝트 개요
+
+이 프로젝트는 주어진 주제에 대해 Instagram 카드뉴스(캐러셀 포스트)를 자동 생성하는 시스템이야.
+Claude Code가 오케스트레이터 역할을 하며 리서치 → 리서치 검증(팀 토론) → 카피 토론(Team 모드 실시간 토론) → 렌더링 → 검토 파이프라인을 실행해.
+
+- 출력: `output/` 디렉토리에 1080×1350px PNG 이미지
+- 템플릿: HTML 기반 (Puppeteer로 PNG 렌더링)
+- 스타일: clean (클린 에디토리얼형)
+- 슬라이드 타입: 14종
+
+---
+
+## 1단계: 프로젝트 인프라 파일 생성
+
+아래 파일들을 정확히 생성해줘.
+
+### package.json
+
+```json
+{
+  "name": "instagram-card-news",
+  "version": "1.0.0",
+  "description": "Instagram card news generator with team agent orchestration",
+  "scripts": {
+    "render": "node scripts/render.js",
+    "sample": "node scripts/generate-samples.js"
+  },
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}
+```
+
+### .gitignore
+
+```
+node_modules/
+output/
+sample-output/
+.DS_Store
+```
+
+### config.json
+
+```json
+{
+  "version": "3.0",
+  "defaults": {
+    "template": "clean",
+    "accent_color": "#8BC34A",
+    "account_name": "my_account",
+    "slide_count": 7
+  },
+  "templates": {
+    "clean": {
+      "description": "클린 에디토리얼 스타일 라이트그레이 + 그린 하이라이트",
+      "accent_color": "#8BC34A",
+      "background": "light-gray"
+    }
+  },
+  "dimensions": {
+    "width": 1080,
+    "height": 1350
+  },
+  "output_dir": "output",
+  "workspace_dir": "workspace"
+}
+```
+
+### 디렉토리 생성
+
+```
+mkdir -p templates/clean scripts workspace output
+```
+
+---
+
+## 2단계: 렌더링 스크립트 생성
+
+### scripts/render.js
+
+Puppeteer 기반 HTML→PNG 렌더러. 핵심 로직:
+
+1. `workspace/slides.json`을 읽음
+2. 각 슬라이드의 `type`에 해당하는 `templates/{style}/{type}.html`을 로드
+3. HTML 내의 `{{placeholder}}`를 슬라이드 데이터로 치환
+4. Puppeteer로 1080×1350px 스크린샷을 PNG로 저장
+
+**플레이스홀더 목록** (모든 `{{...}}`를 슬라이드 데이터로 치환):
+- `{{headline}}`, `{{subtext}}`, `{{body}}`, `{{emphasis}}`, `{{cta_text}}`
+- `{{slide_number}}` (2자리 패딩), `{{total_slides}}` (2자리 패딩)
+- `{{accent_color}}`, `{{account_name}}`
+- `{{image_url}}`, `{{badge_text}}`, `{{badge_number}}`, `{{headline_label}}`
+- `{{step1}}`, `{{step2}}`, `{{step3}}`
+- `{{item1}}` ~ `{{item5}}`
+- `{{left_title}}`, `{{left_body}}`, `{{right_title}}`, `{{right_body}}`
+- `{{grid1_icon}}` ~ `{{grid4_icon}}`, `{{grid1_title}}` ~ `{{grid4_title}}`, `{{grid1_desc}}` ~ `{{grid4_desc}}`
+- `{{bigdata_number}}`, `{{bigdata_unit}}`
+- `{{badge2_text}}`, `{{body2}}`
+- `{{tag1}}`, `{{tag2}}`, `{{tag3}}`
+
+모든 텍스트 값의 `\n`은 `<br>`로 치환해야 해.
+
+**CLI 인터페이스**:
+```bash
+node scripts/render.js \
+  --slides workspace/slides.json \
+  --style clean \
+  --output output/ \
+  --accent "#8BC34A" \
+  --account "my_account"
+```
+
+### scripts/generate-samples.js
+
+clean 스타일에 대해 샘플 카드뉴스를 생성하는 스크립트.
+14개 슬라이드 타입을 모두 포함하는 샘플 데이터(한국어, 디지털 마케팅 주제)를 내장하고, `sample-output/clean/` 디렉토리에 렌더링.
+
+---
+
+## 3단계: HTML 템플릿 생성 (clean 스타일 × 14타입 = 14개 파일)
+
+**팀 에이전트를 사용해서 14개 타입을 병렬로 생성해줘.**
+
+### 공통 규칙 (모든 템플릿)
+
+- 크기: 정확히 `width: 1080px; height: 1350px` (Instagram 세로형)
+- `html, body`에 `margin: 0; padding: 0; overflow: hidden` 필수
+- 모든 텍스트에 `word-break: keep-all` (한국어 단어 단위 줄바꿈)
+- 모든 플레이스홀더는 `{{변수명}}` 형식 (render.js가 치환)
+- 각 파일은 완전한 HTML 문서 (DOCTYPE, head, style, body 포함)
+- 외부 JS 의존성 없이 순수 HTML+CSS만 사용
+
+### 14개 슬라이드 타입별 필수 필드
+
+| 타입 | 파일명 | 필수 플레이스홀더 |
+|---|---|---|
+| cover | cover.html | `{{headline}}`, `{{subtext}}`, `{{headline_label}}`, `{{accent_color}}`, `{{account_name}}` |
+| content | content.html | `{{headline}}`, `{{body}}`, `{{badge_number}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-stat | content-stat.html | `{{headline}}`, `{{emphasis}}`, `{{body}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-quote | content-quote.html | `{{headline}}` (출처), `{{body}}` (인용문), `{{accent_color}}`, `{{account_name}}` |
+| content-badge | content-badge.html | `{{badge_text}}`, `{{headline}}`, `{{body}}`, `{{subtext}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-steps | content-steps.html | `{{headline}}`, `{{step1}}`, `{{step2}}`, `{{step3}}`, `{{body}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-list | content-list.html | `{{headline}}`, `{{item1}}`~`{{item5}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-split | content-split.html | `{{headline}}`, `{{left_title}}`, `{{left_body}}`, `{{right_title}}`, `{{right_body}}`, `{{subtext}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-highlight | content-highlight.html | `{{headline}}`, `{{emphasis}}`, `{{body}}`, `{{subtext}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-image | content-image.html | `{{headline}}`, `{{body}}`, `{{image_url}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-grid | content-grid.html | `{{headline}}`, `{{grid1_icon}}`~`{{grid4_icon}}`, `{{grid1_title}}`~`{{grid4_title}}`, `{{grid1_desc}}`~`{{grid4_desc}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-bigdata | content-bigdata.html | `{{headline}}`, `{{bigdata_number}}`, `{{bigdata_unit}}`, `{{body}}`, `{{subtext}}`, `{{accent_color}}`, `{{account_name}}` |
+| content-fullimage | content-fullimage.html | `{{headline}}`, `{{badge_text}}`, `{{body}}`, `{{badge2_text}}`, `{{body2}}`, `{{image_url}}`, `{{accent_color}}`, `{{account_name}}` |
+| cta | cta.html | `{{headline}}`, `{{cta_text}}`, `{{subtext}}`, `{{tag1}}`, `{{tag2}}`, `{{tag3}}`, `{{accent_color}}`, `{{account_name}}` |
+
+### clean 스타일 디자인 사양
+
+- **폰트**: Apple SD Gothic Neo, -apple-system, BlinkMacSystemFont, sans-serif
+- **배경**: 라이트그레이 (#F0F0F0)
+- **악센트**: `{{accent_color}}` (기본 #8BC34A 라임그린)
+- **letter-spacing**: -0.02em (전체)
+- **헤드라인**: 80~108px, font-weight 900, 색상 #1A1A1A, letter-spacing -0.025em
+- **본문**: 32~36px, font-weight 400, 색상 #4B5563
+- **카드**: background #FFFFFF, border-radius 24px
+- **슬라이드 번호**: 표시하지 않음 (clean 스타일 특징)
+
+#### 핵심 디자인 요소
+
+1. **브랜드 마크** (모든 슬라이드 공통)
+   - 좌측 상단 또는 하단에 악센트색 원형 도트(18px) + 계정명(28px, #9CA3AF)
+   - 도트와 계정명 사이 gap 10px
+
+2. **하이라이트 효과** (`.highlight` 클래스)
+   - `background: linear-gradient(to top, {{accent_color}}66 45%, transparent 45%)`
+   - headline에 `<span class='highlight'>텍스트</span>` 사용 시 형광펜 마커 효과
+   - `box-decoration-break: clone; -webkit-box-decoration-break: clone;`
+
+3. **쉐브론 화살표** (커버/CTA만)
+   - 우측 하단에 더블 쉐브론(>>) SVG 아이콘
+   - 색상 #374151, stroke-width 2.5, 44x44px
+
+4. **커버 레이아웃**
+   - 상단 580px 빈 공간 (아이콘/이미지 영역)
+   - 하단에 hook-text(46px, #6B7280) → headline(108px, #1A1A1A) → subtitle(40px, #374151)
+   - 좌측 정렬
+
+5. **본문 슬라이드 레이아웃**
+   - 상단: 브랜드 마크 (도트+계정명)
+   - 중앙: 악센트색 라인 구분선 + 헤드라인 + 컨텐츠
+   - 하단: 브랜드 마크 반복 또는 여백
+
+6. **CTA 레이아웃**
+   - 중앙 정렬: headline + subtext
+   - 악센트색 배경의 둥근 CTA 버튼 (border-radius 100px)
+   - 하단: 해시태그 배지 3개 (tag1~3, 악센트색 배경 pill)
+   - 푸터: 브랜드 도트+계정명 + 쉐브론
+
+---
+
+## 4단계: CLAUDE.md 생성
+
+프로젝트 루트에 `CLAUDE.md` 파일을 생성해줘. 이 파일이 Claude Code에게 카드뉴스 생성 파이프라인을 지시하는 핵심 문서야.
+
+### CLAUDE.md 내용
+
+```markdown
+# Instagram 카드뉴스 생성 프로젝트
+
+> 14종 슬라이드 타입 + clean 템플릿 스타일 + Team 모드 토론 파이프라인
+
+## 프로젝트 개요
+
+이 프로젝트는 주어진 주제에 대해 Instagram 카드뉴스(캐러셀 포스트)를 자동으로 생성합니다.
+Claude Code가 오케스트레이터 역할을 하며, 리서치 → **리서치 검증 (팀 토론)** → **카피 토론 (Team 모드 실시간 토론)** → 렌더링 → 검토 파이프라인을 실행합니다.
+
+**입력**: 주제, 톤, 슬라이드 수, 악센트 색상
+**출력**: `output/` 디렉토리에 PNG 이미지 파일들 (1080×1350px, Instagram 세로형)
+
+---
+
+## 카드뉴스 생성 워크플로우
+
+사용자가 카드뉴스를 요청하면 (예: "AI 프롬프트 팁으로 카드뉴스 만들어줘") 아래 파이프라인을 순서대로 실행합니다.
+
+### Step 1: 요청 파싱
+
+사용자 입력에서 다음 파라미터를 추출합니다:
+
+| 파라미터 | 기본값 | 설명 |
+|---|---|---|
+| `topic` | (필수) | 카드뉴스 주제 |
+| `tone` | `professional` | 톤 (professional / casual / energetic) |
+| `slide_count` | `7` | 슬라이드 수 (최소 5, 최대 12) |
+| `accent_color` | `#8BC34A` | 악센트 색상 (hex) |
+| `account_name` | `my_account` | 계정명 (@ 없이 입력, 템플릿에서 자동 추가) |
+
+명시되지 않은 파라미터는 `config.json`의 기본값을 사용합니다.
+
+---
+
+### Step 2: 리서치 (Task 에이전트)
+
+**에이전트**: general-purpose
+**모델**: sonnet
+**출력 파일**: `workspace/research.md`
+
+주제에 대한 웹 검색을 수행하고 다음 내용을 포함한 `workspace/research.md`를 작성합니다:
+
+- 핵심 포인트 5–10개
+- 관련 통계 및 수치
+- 인용구 1–2개 (전문가 의견, 명언 등)
+- 최신 트렌드 및 맥락 정보
+
+---
+
+### Step 2.5: 리서치 검증 (팀 토론)
+
+리서치 결과의 정확성과 완성도를 팀 에이전트가 교차 검증합니다.
+
+**방식**: 2개의 Task 에이전트를 **병렬**로 실행한 뒤, 오케스트레이터가 종합
+
+#### 에이전트 구성
+
+| 역할 | 에이전트 | 모델 | 임무 |
+|---|---|---|---|
+| 팩트체커 | general-purpose | sonnet | 통계/수치의 출처 확인, 오래된 데이터 지적, 잘못된 정보 식별 |
+| 보완 리서처 | general-purpose | sonnet | 빠진 핵심 정보 보완, 다른 소스로 교차 검증, 추가 인사이트 제안 |
+
+#### 실행 흐름
+
+1. `workspace/research.md`를 두 에이전트에게 동시에 전달
+2. **팩트체커**: 각 통계/수치에 대해 웹 검색으로 출처 확인, 정확도를 `확인됨/미확인/수정필요`로 분류
+3. **보완 리서처**: 주제에 대해 독립적으로 웹 검색 수행, 기존 리서치에 없는 중요 정보 식별
+4. 오케스트레이터가 두 에이전트의 피드백을 종합하여 `workspace/research.md`를 최종 수정
+   - 수정필요 항목: 정확한 데이터로 교체
+   - 미확인 항목: 출처 불분명 표기 또는 제거
+   - 보완 정보: 유용한 내용만 선별하여 추가
+
+**통과 기준**: 모든 통계/수치가 `확인됨` 상태이고, 핵심 포인트가 5개 이상일 때
+
+---
+
+### Step 3: 카피라이팅
+
+> **Step 3.5에 통합되어 별도 실행하지 않습니다.** 아래 slides.json 포맷과 카피라이팅 가이드라인은 Step 3.5의 카피 작가가 참조합니다.
+
+#### slides.json 포맷
+
+```json
+[
+  {"slide": 1, "type": "cover", "headline": "...", "subtext": "...", "headline_label": "카드뉴스"},
+  {"slide": 2, "type": "content", "badge_number": "01", "headline": "...", "body": "..."},
+  {"slide": 3, "type": "content-badge", "badge_text": "TREND", "headline": "핵심 트렌드", "body": "설명 텍스트", "subtext": "2025년"},
+  {"slide": 4, "type": "content-steps", "headline": "진행 절차", "step1": "첫 번째 단계", "step2": "두 번째 단계", "step3": "세 번째 단계"},
+  {"slide": 5, "type": "content-list", "headline": "핵심 포인트", "item1": "항목 1", "item2": "항목 2", "item3": "항목 3", "item4": "항목 4", "item5": "항목 5"},
+  {"slide": 6, "type": "content-split", "headline": "A vs B", "left_title": "A", "left_body": "설명", "right_title": "B", "right_body": "설명"},
+  {"slide": 7, "type": "content-highlight", "headline": "핵심 포인트", "emphasis": "키워드", "body": "설명"},
+  {"slide": 8, "type": "content-stat", "headline": "...", "emphasis": "85%", "body": "..."},
+  {"slide": 9, "type": "content-quote", "headline": "— 출처", "body": "인용문..."},
+  {"slide": 10, "type": "content-grid", "headline": "4대 핵심 전략", "grid1_icon": "🎯", "grid1_title": "타겟팅", "grid1_desc": "설명", "grid2_icon": "📱", "grid2_title": "콘텐츠", "grid2_desc": "설명", "grid3_icon": "🤖", "grid3_title": "자동화", "grid3_desc": "설명", "grid4_icon": "📊", "grid4_title": "분석", "grid4_desc": "설명"},
+  {"slide": 11, "type": "content-bigdata", "headline": "시장 규모", "bigdata_number": "48.8", "bigdata_unit": "조원", "body": "설명 텍스트", "subtext": "출처"},
+  {"slide": 12, "type": "cta", "headline": "...", "cta_text": "팔로우하기", "tag1": "#태그1", "tag2": "#태그2", "tag3": "#태그3"}
+]
+```
+
+#### 카피라이팅 가이드라인
+
+- **슬라이드 1 (cover)**: 강력한 훅 문장, 호기심 유발, 핵심 키워드 포함
+- **중간 슬라이드**: 한 슬라이드에 하나의 포인트만, 명확하고 간결하게
+- **숫자/통계가 있으면** `content-stat` 타입으로 강조
+- **인용구/명언/전문가 의견이 있으면** `content-quote` 타입 활용
+- **카테고리/태그가 있으면** `content-badge` 타입으로 시작
+- **절차/과정 설명은** `content-steps` 타입 활용 (3단계)
+- **여러 항목 나열은** `content-list` 타입 활용 (최대 5개)
+- **비교/대조가 필요하면** `content-split` 타입 활용
+- **핵심 메시지 강조는** `content-highlight` 타입 활용
+- **2x2 그리드 정보 정리는** `content-grid` 타입 활용 (4개 항목, 이모지 아이콘)
+- **대형 숫자/금액/규모 강조는** `content-bigdata` 타입 활용
+- **풀 배경 이미지 + 텍스트 오버레이는** `content-fullimage` 타입 활용 (두 개의 배지 섹션, 다크 오버레이)
+- **마지막 슬라이드 (cta)**: 명확한 행동 유도 (저장, 팔로우, 공유 등)
+- **문장 길이**: 짧고 임팩트 있게, 한 줄 15자 이내 권장
+- **어조**: 요청된 톤에 맞게 작성
+- **하이라이트**: headline에 `<span class='highlight'>텍스트</span>` 사용 시 녹색 배경 강조 효과
+
+---
+
+### Step 3.5: 카피 토론 (Team 모드 실시간 토론)
+
+카피 작가와 후킹 전문가가 **Team 모드**에서 실시간 토론하며 slides.json을 완성합니다.
+
+**방식**: `TeamCreate` → `TaskCreate` → `Task(team_name)` 스폰 → 에이전트 간 `SendMessage` 토론 → 합의 도달 → `workspace/slides.json` 최종 확정
+
+#### 에이전트 구성
+
+| 역할 | 이름 | 에이전트 | 모델 | 임무 |
+|---|---|---|---|---|
+| 카피 작가 | `copywriter` | general-purpose | sonnet | research.md 기반 slides.json 초안 작성, 후킹 전문가 피드백 반영하여 수정 |
+| 후킹 전문가 | `hook-expert` | general-purpose | sonnet | 커버 헤드라인 스크롤 스톱 파워, 호기심 유발 강도, CTA 클릭 유도력 평가 및 구체적 대안 제시 |
+
+#### 실행 흐름
+
+1. 오케스트레이터가 `TeamCreate(team_name="copy-debate")`로 팀 생성
+2. `TaskCreate`로 두 에이전트의 작업 정의:
+   - `copywriter` 태스크: research.md + 톤 + 슬라이드 수를 기반으로 slides.json 초안 작성
+   - `hook-expert` 태스크: copywriter의 초안을 평가하고 피드백/대안 제시
+3. `Task(team_name="copy-debate", name="copywriter")` + `Task(team_name="copy-debate", name="hook-expert")` 동시 스폰
+4. **라운드 1**: 카피 작가가 research.md 기반으로 slides.json 초안 작성 → `SendMessage`로 후킹 전문가에게 전달
+5. **라운드 1 평가**: 후킹 전문가가 초안 평가 → 후킹 점수 (1~10점) + 구체적 피드백/대안을 `SendMessage`로 카피 작가에게 전달
+   - 평가 기준:
+     - 커버 헤드라인: "이걸 왜 봐야 하지?"에 3초 안에 답하는가
+     - 각 슬라이드: 다음 장을 넘기고 싶은 호기심을 유발하는가
+     - CTA: 구체적이고 즉시 행동 가능한 문구인가
+     - 문장 길이: 한 줄 15자 이내 준수 여부
+     - 톤 일관성, 슬라이드 간 흐름, 슬라이드 타입 적절성
+6. **라운드 2~3** (필요 시): 카피 작가가 피드백 반영하여 수정 → 다시 후킹 전문가에게 전달 → 재평가
+7. **합의 도달**: 후킹 점수 7점 이상 달성 시 카피 작가가 `workspace/slides.json` 최종 저장
+8. 오케스트레이터가 `SendMessage(type="shutdown_request")`로 팀 종료 → Step 4로 진행
+
+#### 통과 기준
+
+- 후킹 점수 **7점 이상**
+- 카피 작가와 후킹 전문가 **양측 합의**
+- 최대 **3라운드** 내 합의 실패 시 마지막 버전 채택 후 진행
+
+---
+
+### Step 4: 렌더링 (Bash)
+
+`render.js` 스크립트를 실행하여 슬라이드 JSON을 PNG 이미지로 변환합니다.
+
+```bash
+node scripts/render.js \
+  --slides workspace/slides.json \
+  --style clean \
+  --output output/ \
+  --accent "{accent_color}" \
+  --account "{account_name}"
+```
+
+---
+
+### Step 5: 검토 (Task 에이전트)
+
+**에이전트**: general-purpose
+**모델**: sonnet
+
+`output/` 디렉토리의 PNG 파일들을 읽어 다음 항목을 검토합니다:
+
+- 가독성: 텍스트가 충분히 크고 읽기 쉬운지
+- 텍스트 잘림: 내용이 프레임을 벗어나지 않는지
+- 흐름: 슬라이드 간 내용이 자연스럽게 연결되는지
+- CTA 명확성: 마지막 슬라이드의 행동 유도가 구체적인지
+- 주제 일관성: 전체 카드뉴스가 주제에 집중되어 있는지
+
+**문제 발견 시**: Step 3.5 (카피 토론)으로 돌아가 구체적인 피드백과 함께 Team 모드 재실행
+**이상 없음**: 사용자에게 완료 보고 및 출력 파일 경로 안내
+```
+
+### 슬라이드 타입 레퍼런스
+
+| 타입 | 사용 시점 | 필드 |
+|---|---|---|
+| `cover` | 항상 첫 번째 슬라이드 (표지) | `headline`, `subtext`, `headline_label` |
+| `content` | 일반 내용 설명 | `headline`, `body`, `badge_number` |
+| `content-stat` | 숫자/통계/퍼센트 강조 | `headline`, `emphasis`, `body` |
+| `content-quote` | 인용구, 명언, 전문가 의견 | `headline` (출처), `body` (인용문) |
+| `content-badge` | 카테고리/태그 + 대형 헤드라인 | `badge_text`, `headline`, `body`, `subtext` |
+| `content-steps` | 단계별 프로세스/절차 설명 | `headline`, `step1`, `step2`, `step3`, `body` |
+| `content-list` | 항목을 나열할 때 (최대 5개) | `headline`, `item1`~`item5` |
+| `content-split` | 두 가지를 비교/대조할 때 | `headline`, `left_title`, `left_body`, `right_title`, `right_body` |
+| `content-highlight` | 핵심 정보를 강조 박스로 표시 | `headline`, `emphasis`, `body`, `subtext` |
+| `content-image` | 이미지와 텍스트를 함께 보여줄 때 | `headline`, `body`, `image_url` |
+| `content-grid` | 4가지 항목을 그리드로 정리할 때 | `headline`, `grid1~4_icon`, `grid1~4_title`, `grid1~4_desc` |
+| `content-bigdata` | 거대 숫자/금액/규모를 강조할 때 | `headline`, `bigdata_number`, `bigdata_unit`, `body`, `subtext` |
+| `content-fullimage` | 풀 배경 이미지 + 텍스트 오버레이 | `headline`, `badge_text`, `body`, `badge2_text`, `body2`, `image_url` |
+| `cta` | 행동 유도 (항상 마지막) | `headline`, `cta_text`, `subtext`, `tag1`~`tag3` |
+
+---
+
+## 빠른 명령어 예시
+
+```
+카드뉴스 만들어줘: AI 트렌드 2025
+```
+```
+"성공하는 아침 루틴" 카드뉴스 5장
+```
+```
+"ChatGPT 활용법" 카드뉴스, 10장, 악센트 #FF6B6B
+```
+
+---
+
+## 디렉토리 구조
+
+```
+instagram-card-news/
+├── templates/
+│   └── clean/           # HTML 템플릿 (14 타입)
+├── scripts/
+│   ├── render.js        # Puppeteer HTML → PNG 렌더러
+│   └── generate-samples.js
+├── workspace/           # 런타임 작업 공간
+├── output/              # 최종 PNG 출력
+├── config.json          # 기본 설정
+└── CLAUDE.md            # 이 파일
+```
+```
+
+---
+
+## 5단계: npm install 실행
+
+모든 파일이 생성된 후 `npm install`을 실행해서 Puppeteer를 설치해줘.
+
+---
+
+## 6단계: 샘플 렌더링으로 검증
+
+설치 후 `node scripts/generate-samples.js`를 실행해서 clean 스타일이 정상 렌더링되는지 확인해줘.
+에러가 있으면 해당 템플릿을 수정해서 정상 동작할 때까지 반복해줘.
+
+---
+
+## 실행 순서 요약
+
+1. 인프라 파일 생성 (package.json, config.json, .gitignore)
+2. 디렉토리 구조 생성
+3. scripts/render.js 생성
+4. scripts/generate-samples.js 생성
+5. **clean 스타일 14개 HTML 템플릿 생성 (팀 에이전트 활용)**
+6. CLAUDE.md 생성
+7. npm install
+8. 샘플 렌더링으로 검증
+9. 에러 수정 (있다면)
+10. git init && git add -A && git commit
+
+완성 후 "카드뉴스 만들어줘: [주제]" 한 줄이면 자동으로 카드뉴스가 생성되는 상태로 만들어줘.
+```

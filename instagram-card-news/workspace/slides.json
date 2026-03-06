@@ -1,0 +1,71 @@
+[
+  {
+    "slide": 1,
+    "type": "cover",
+    "headline": "AI 하나로\n다 하려는\n당신에게",
+    "subtext": "AI Native 로드맵 EP.03"
+  },
+  {
+    "slide": 2,
+    "type": "content-badge",
+    "badge_text": "혼자서 전부",
+    "headline": "하나의 AI에게\n다 시키고 있죠?",
+    "body": "코딩도 글쓰기도 번역도 분석도\n하나의 채팅창에서 전부 해결\n맥락이 섞이고 품질이 떨어집니다",
+    "subtext": ""
+  },
+  {
+    "slide": 3,
+    "type": "content",
+    "headline": "회사에서도\n혼자 다 하면 망합니다",
+    "body": "일 잘하는 직원 한 명에게\n모든 업무를 몰아주면\n그 사람도 회사도 무너집니다\nAI도 똑같습니다"
+  },
+  {
+    "slide": 4,
+    "type": "content-split",
+    "headline": "같은 AI, 완전히 다른 구조",
+    "left_title": "올라운더 1명",
+    "left_body": "매번 역할 설명\n맥락 전환 반복\n깊이가 얕아진다",
+    "right_title": "전문가 팀",
+    "right_body": "각자 역할이 있고\n맥락이 설계되어 있고\n한 줄이면 움직인다",
+    "subtext": ""
+  },
+  {
+    "slide": 5,
+    "type": "content-steps",
+    "headline": "에이전트, <span class='highlight'>이렇게</span> 만듭니다",
+    "step1": "역할을 정한다 — 코드, 법률, 재무...",
+    "step2": "전문지식을 준다 — 판단 기준과 규칙",
+    "step3": "한 줄로 부른다 — \"법률 검토해줘\""
+  },
+  {
+    "slide": 6,
+    "type": "content-list",
+    "headline": "나만의 <span class='highlight'>팀</span>을\n만들어보세요",
+    "item1": "코드 전문가 — 설계, 리뷰, 리팩터링",
+    "item2": "법률 전문가 — 계약서, 컴플라이언스",
+    "item3": "재무 전문가 — 캐시플로우, 세무",
+    "item4": "마케팅 전문가 — 카피, SNS, 브랜딩",
+    "item5": "당신의 업무에 맞는 전문가를 세우세요"
+  },
+  {
+    "slide": 7,
+    "type": "content-highlight",
+    "headline": "EP.02의 맥락 설계가\n여기서 빛납니다",
+    "emphasis": "맥락 위에 역할을 세운다",
+    "body": "설계된 맥락이 있으니\n전문가를 세울 수 있고\n전문가가 있으니 팀이 됩니다",
+    "subtext": ""
+  },
+  {
+    "slide": 8,
+    "type": "content-stat",
+    "headline": "오늘 기억할 한 가지",
+    "emphasis": "1명 < 팀",
+    "body": "AI 하나를 잘 쓰는 게 아니라\n전문가 팀을 설계하는 겁니다"
+  },
+  {
+    "slide": 9,
+    "type": "cta",
+    "headline": "다음 편 예고",
+    "cta_text": "EP.04 팀이 만들어지면 여러 AI를 동시에 지휘할 차례다"
+  }
+]
