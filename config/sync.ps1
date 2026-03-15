@@ -11,14 +11,48 @@ Write-Host "Source: $ScriptDir"
 Write-Host "Target: $ClaudeDir"
 Write-Host ""
 
-# 1. settings.json — 경로를 Windows 형식으로 치환
-$settings = Get-Content "$ScriptDir\settings.json" -Raw -Encoding UTF8
-# Mac 경로 → Windows 경로 변환
-$settings = $settings -replace '/Users/ash/', "$($env:USERPROFILE -replace '\\','/')/"
-$settings = $settings -replace 'python3', 'python'
-$settings = $settings -replace 'osascript.*?"', 'powershell -Command \"[System.Media.SystemSounds]::Asterisk.Play(); [System.Windows.Forms.MessageBox]::Show(''작업이 완료됐습니다'',''Claude Code'')\"'
-Set-Content "$ClaudeDir\settings.json" $settings -Encoding UTF8
-Write-Host "[OK] settings.json (경로 변환 적용)"
+# 1. settings.json — JSON 파싱 후 Windows 경로/명령어 변환
+$settingsRaw = Get-Content "$ScriptDir\settings.json" -Raw -Encoding UTF8
+$cfg = $settingsRaw | ConvertFrom-Json
+
+# Windows hooks 경로
+$hooksDir = "$env:USERPROFILE\.claude\hooks"
+$otelPath  = "$hooksDir\otel_push.py"
+$otelUrl   = "https://raw.githubusercontent.com/eoash/eoash/main/token-dashboard/scripts/otel_push.py"
+
+# hooks 경로 변환 함수 (Mac 절대경로 → Windows)
+function ConvertHookCmd($cmd) {
+    $cmd = $cmd -replace [regex]::Escape('/Users/ash/.claude/hooks/'), "$($hooksDir -replace '\\','\\\\')\"
+    $cmd = $cmd -replace '\bpython3\b', 'python'
+    $cmd = $cmd -replace [regex]::Escape('node "/Users/ash/.claude/hooks/'), "node `"$($hooksDir -replace '\\','\\\\')\"
+    return $cmd
+}
+
+# Stop hook: bash OTel 명령 → PowerShell로 교체
+$winOtelCmd = "powershell -NoProfile -Command `"`$env:PYTHONUTF8='1';`$env:PYTHONIOENCODING='utf-8';`$d=[Console]::In.ReadToEnd();Invoke-WebRequest -Uri '$otelUrl' -OutFile '$otelPath' -ErrorAction SilentlyContinue;`$d|python '$otelPath'`""
+# Stop hook: osascript 알림 → Windows 토스트
+$winNotifyCmd = "powershell -NoProfile -Command `"Add-Type -AssemblyName System.Windows.Forms;[System.Windows.Forms.MessageBox]::Show('작업이 완료됐습니다','Claude Code')`""
+
+foreach ($hookGroup in $cfg.hooks.PSObject.Properties) {
+    foreach ($entry in $hookGroup.Value) {
+        $newHooks = @()
+        foreach ($h in $entry.hooks) {
+            $cmd = $h.command
+            if ($cmd -match "bash -c '.*otel_push") {
+                $h.command = $winOtelCmd
+            } elseif ($cmd -match "osascript") {
+                $h.command = $winNotifyCmd
+            } else {
+                $h.command = ConvertHookCmd $cmd
+            }
+            $newHooks += $h
+        }
+        $entry.hooks = $newHooks
+    }
+}
+
+$cfg | ConvertTo-Json -Depth 10 | Set-Content "$ClaudeDir\settings.json" -Encoding UTF8
+Write-Host "[OK] settings.json (Windows 경로/명령 변환 적용)"
 
 # 2. hooks
 New-Item -ItemType Directory -Force -Path "$ClaudeDir\hooks" | Out-Null
