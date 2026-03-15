@@ -1,0 +1,76 @@
+{
+  "skills": {
+    "my-fetch-tweet": {
+      "description": "X/Twitter 트윗 번역·요약·인사이트",
+      "keywords": ["트윗", "tweet", "X 게시글", "트위터"],
+      "intentPatterns": ["(트윗|tweet|x\\.com|twitter\\.com)"],
+      "urlPatterns": ["x\\.com/", "twitter\\.com/", "fxtwitter\\.com/", "fixupx\\.com/"]
+    },
+    "my-fetch-youtube": {
+      "description": "YouTube 영상 자막 추출·번역·요약",
+      "keywords": ["유튜브", "youtube", "영상 정리", "영상 번역", "영상 요약"],
+      "intentPatterns": ["(유튜브|youtube|영상).*(번역|정리|요약|분석)"],
+      "urlPatterns": ["youtube\\.com/watch", "youtu\\.be/"]
+    },
+    "my-content-digest": {
+      "description": "Quiz-First 방식 콘텐츠 학습",
+      "keywords": ["콘텐츠 소화", "퀴즈", "digest", "학습"],
+      "intentPatterns": ["(콘텐츠|내용).*(소화|학습|퀴즈)"]
+    },
+    "my-context-sync": {
+      "description": "Slack·Notion·Gmail·Calendar·ClickUp·GitHub 통합 싱크",
+      "keywords": ["싱크", "sync", "컨텍스트 싱크", "정보 수집"],
+      "intentPatterns": ["(컨텍스트|context).*(싱크|sync|수집)"]
+    },
+    "flip-tracker": {
+      "description": "Flip 투자자 서명 회신 추적",
+      "keywords": ["flip tracker", "서명 회신", "플립 현황", "투자자 회신", "서명 왔어"],
+      "intentPatterns": ["(서명|회신|플립|flip).*(확인|추적|현황|왔)"]
+    },
+    "plan-first": {
+      "description": "작업 전 계획서·맥락노트·체크리스트 3문서 수립",
+      "keywords": ["계획 세워줘", "작업 계획", "시작 전에 정리", "계획부터"],
+      "intentPatterns": ["(계획|plan).*(세워|먼저|시작 전)"]
+    },
+    "my-code-reviewer": {
+      "description": "Alex 코드 리뷰 어드바이저",
+      "keywords": ["코드 리뷰", "아키텍처 분석", "리팩터링", "SOLID"],
+      "intentPatterns": ["(코드|code).*(리뷰|review|분석|검토)"]
+    },
+    "my-legal-advisor": {
+      "description": "Lisa 법률 어드바이저",
+      "keywords": ["법률 조언", "법률 상담", "계약 검토", "법률 리스크", "컴플라이언스"],
+      "intentPatterns": ["(법률|계약|legal).*(조언|상담|검토|리스크)"]
+    },
+    "my-finance-advisor": {
+      "description": "Chris 재무 어드바이저",
+      "keywords": ["재무 조언", "캐시 상황", "AR 분석", "FX 환전", "재무 리뷰", "캐시플로우"],
+      "intentPatterns": ["(재무|캐시|AR|FX|finance).*(조언|분석|리뷰|환전)"]
+    },
+    "my-consult": {
+      "description": "어드바이저 자동 라우팅 (Alex/Lisa/Chris)",
+      "keywords": ["상담해줘", "물어볼게", "어드바이저"],
+      "intentPatterns": ["(상담|물어|조언).*(해줘|볼게|줘)"]
+    },
+    "my-session-wrap": {
+      "description": "세션 정리·문서 업데이트·학습 기록",
+      "keywords": ["세션 정리", "마무리", "wrap"],
+      "intentPatterns": ["(세션|작업).*(정리|마무리|wrap)"]
+    },
+    "my-history-insight": {
+      "description": "과거 세션 기록 분석·인사이트 추출",
+      "keywords": ["히스토리 분석", "세션 분석", "작업 패턴"],
+      "intentPatterns": ["(히스토리|세션|history).*(분석|인사이트|패턴)"]
+    },
+    "my-session-analyzer": {
+      "description": "SKILL.md vs 실행 기록 PASS/FAIL 검증",
+      "keywords": ["세션 검증", "스킬 분석", "실행 검증"],
+      "intentPatterns": ["(세션|스킬).*(검증|분석|PASS|FAIL)"]
+    },
+    "opusplan": {
+      "description": "Opus 설계 + Sonnet 구현 2단계 개발",
+      "keywords": ["opusplan", "opus 계획", "opus로 설계"],
+      "intentPatterns": ["opus.*(plan|계획|설계)"]
+    }
+  }
+}

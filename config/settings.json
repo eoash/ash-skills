@@ -1,0 +1,86 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/ash/.claude/hooks/session_start.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/ash/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/ash/.claude/hooks/first_message.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /Users/ash/.claude/hooks/skill_activation.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/ash/.claude/hooks/gsd-context-monitor.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'D=$(cat);curl -sL https://raw.githubusercontent.com/eoash/token-dashboard/main/scripts/otel_push.py -o ~/.claude/hooks/otel_push.py 2>/dev/null;echo \"$D\"|python3 ~/.claude/hooks/otel_push.py'"
+          },
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"작업이 완료됐습니다\" with title \"Claude Code\" sound name \"Glass\"'",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"/Users/ash/.claude/hooks/gsd-statusline.js\""
+  },
+  "enabledPlugins": {
+    "clarify@team-attention-plugins": true,
+    "git-onboarding@git-for-everyone": true,
+    "ralph-loop@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "github@claude-plugins-official": true
+  },
+  "language": "korean",
+  "voiceEnabled": true,
+  "skipDangerousModePermissionPrompt": true
+}
