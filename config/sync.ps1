@@ -20,11 +20,13 @@ $hooksDir = "$env:USERPROFILE\.claude\hooks"
 $otelPath  = "$hooksDir\otel_push.py"
 $otelUrl   = "https://raw.githubusercontent.com/eoash/eoash/main/token-dashboard/scripts/otel_push.py"
 
-# hooks 경로 변환 함수 (Mac 절대경로 → Windows)
+# hooks 경로 변환 함수 (Mac 절대경로 → Windows 포워드슬래시)
+# 포워드슬래시 사용 이유: 백슬래시 → regex replace → ConvertTo-Json 3단계 이스케이핑 버그 회피
+# Windows는 Python/Node 경로에서 / 를 \ 와 동일하게 허용함
 function ConvertHookCmd($cmd) {
-    $cmd = $cmd -replace [regex]::Escape('/Users/ash/.claude/hooks/'), "$($hooksDir -replace '\\','\\\\')\"
+    $fwdHooksDir = $hooksDir -replace '\\', '/'  # C:\...\hooks → C:/.../hooks
+    $cmd = $cmd -replace [regex]::Escape('/Users/ash/.claude/hooks'), $fwdHooksDir
     $cmd = $cmd -replace '\bpython3\b', 'python'
-    $cmd = $cmd -replace [regex]::Escape('node "/Users/ash/.claude/hooks/'), "node `"$($hooksDir -replace '\\','\\\\')\"
     return $cmd
 }
 
@@ -32,7 +34,7 @@ function ConvertHookCmd($cmd) {
 $otelHookPath = "$hooksDir\otel_hook.ps1"
 $winOtelCmd = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$otelHookPath`""
 # Stop hook: osascript 알림 → Windows 토스트 (별도 .ps1 불필요, 간단한 알림)
-$winNotifyCmd = "powershell -NoProfile -Command `"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');[System.Windows.Forms.MessageBox]::Show('완료됐습니다','Claude Code')`""
+$winNotifyCmd = "powershell -NoProfile -Command `"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');[System.Windows.Forms.MessageBox]::Show('Done','Claude Code')`""
 
 foreach ($hookGroup in $cfg.hooks.PSObject.Properties) {
     foreach ($entry in $hookGroup.Value) {
