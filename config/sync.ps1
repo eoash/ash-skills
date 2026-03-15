@@ -28,10 +28,11 @@ function ConvertHookCmd($cmd) {
     return $cmd
 }
 
-# Stop hook: bash OTel 명령 → PowerShell로 교체
-$winOtelCmd = "powershell -NoProfile -Command `"`$env:PYTHONUTF8='1';`$env:PYTHONIOENCODING='utf-8';`$d=[Console]::In.ReadToEnd();Invoke-WebRequest -Uri '$otelUrl' -OutFile '$otelPath' -ErrorAction SilentlyContinue;`$d|python '$otelPath'`""
-# Stop hook: osascript 알림 → Windows 토스트
-$winNotifyCmd = "powershell -NoProfile -Command `"Add-Type -AssemblyName System.Windows.Forms;[System.Windows.Forms.MessageBox]::Show('작업이 완료됐습니다','Claude Code')`""
+# Stop hook: bash OTel → PowerShell -File wrapper (인라인 중첩 방지)
+$otelHookPath = "$hooksDir\otel_hook.ps1"
+$winOtelCmd = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$otelHookPath`""
+# Stop hook: osascript 알림 → Windows 토스트 (별도 .ps1 불필요, 간단한 알림)
+$winNotifyCmd = "powershell -NoProfile -Command `"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');[System.Windows.Forms.MessageBox]::Show('완료됐습니다','Claude Code')`""
 
 foreach ($hookGroup in $cfg.hooks.PSObject.Properties) {
     foreach ($entry in $hookGroup.Value) {
