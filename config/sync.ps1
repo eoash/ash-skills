@@ -61,10 +61,18 @@ Copy-Item "$ScriptDir\hooks\*" "$ClaudeDir\hooks\" -Force
 $hookCount = (Get-ChildItem "$ScriptDir\hooks\").Count
 Write-Host "[OK] hooks ($hookCount 개 파일)"
 
-# 3. memory
+# 3. memory — eoash 레포가 어디 클론됐든 매칭
+# 지원 경로: Documents\eoash, ash, 또는 기타 클론 위치
 $memoryDir = $null
-Get-ChildItem "$ClaudeDir\projects\" -Directory | Where-Object { $_.Name -match "eoash" } | ForEach-Object {
-    $memoryDir = "$($_.FullName)\memory"
+$repoPatterns = @("eoash", "C--Users-ash-ash", "C--Users-ash-Documents-eoash")
+Get-ChildItem "$ClaudeDir\projects\" -Directory | ForEach-Object {
+    $name = $_.Name
+    foreach ($pattern in $repoPatterns) {
+        if ($name -match [regex]::Escape($pattern) -or $name -eq $pattern) {
+            $memoryDir = "$($_.FullName)\memory"
+            break
+        }
+    }
 }
 
 if ($memoryDir) {
@@ -74,7 +82,8 @@ if ($memoryDir) {
     Write-Host "[OK] memory -> $memoryDir ($memCount 개 파일)"
 } else {
     Write-Host "[SKIP] eoash 프로젝트 메모리 디렉토리를 찾을 수 없음"
-    Write-Host "       Claude Code에서 eoash 프로젝트를 한 번 열어야 디렉토리가 생성됩니다."
+    Write-Host "       Claude Code에서 eoash 레포 경로를 한 번 열면 디렉토리가 자동 생성됩니다."
+    Write-Host "       지원 패턴: $($repoPatterns -join ', ')"
 }
 
 Write-Host ""
