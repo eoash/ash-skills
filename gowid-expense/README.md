@@ -74,4 +74,4 @@ gowid-expense/
 
 ## 라이선스
 
-MIT
+Proprietary - EO Studio 사내 전용
