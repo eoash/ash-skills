@@ -51,7 +51,7 @@ def _api_get(path: str) -> dict:
         headers={"Authorization": API_KEY},
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         _err(f"API {e.code}: {path}")
@@ -71,7 +71,7 @@ def _api_put(path: str, body: dict) -> dict | None:
         method="PUT",
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw) if raw.strip() else None
     except urllib.error.HTTPError as e:
@@ -133,7 +133,7 @@ def cmd_my_expenses() -> None:
     # 페이징으로 미제출 경비 전체 조회
     all_expenses: list[dict] = []
     page = 0
-    while page <= 50:
+    while page <= 20:
         resp = _api_get(f"/v1/expenses/not-submitted?page={page}&size=50")
         content = resp["data"].get("content", [])
         if not content:
