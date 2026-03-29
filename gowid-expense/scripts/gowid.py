@@ -279,15 +279,87 @@ def cmd_rules(query: str = "") -> None:
 
 # ── Main ──────────────────────────────────────────────────
 
+# API 키 없이 실행 가능한 커맨드
+_LOCAL_COMMANDS = {"setup", "rules", "help"}
+
+
+def cmd_setup() -> None:
+    """첫 실행 셋업 가이드."""
+    email = _git_email()
+    has_key = bool(API_KEY)
+
+    print("=" * 50)
+    print("  Gowid 경비 스킬 셋업 가이드")
+    print("=" * 50)
+    print()
+
+    # Step 1: git email
+    if email:
+        print(f"[OK] git email: {email}")
+    else:
+        print("[!!] git config user.email 이 설정되지 않았습니다.")
+        print("     git config --global user.email \"your@eoeoeo.net\"")
+    print()
+
+    # Step 2: API Key
+    if has_key:
+        print("[OK] GOWID_API_KEY 설정됨")
+    else:
+        print("[!!] GOWID_API_KEY 가 설정되지 않았습니다.")
+        print()
+        print("  1. Slack #dev-ops 채널 고정 메시지에서 API 키 확인")
+        print("  2. 아래 명령으로 환경변수 등록:")
+        print()
+        print("  Mac/Linux (zsh):")
+        print('    echo \'export GOWID_API_KEY="키값"\' >> ~/.zshrc && source ~/.zshrc')
+        print()
+        print("  Windows (PowerShell):")
+        print("    notepad $PROFILE")
+        print('    # 파일에 추가: $env:GOWID_API_KEY="키값"')
+        print("    # 저장 후 터미널 재시작")
+    print()
+
+    # Step 3: 연결 확인
+    if has_key and email:
+        print("연결 확인 중...")
+        try:
+            resp = _api_get("/v1/members")
+            for m in resp["data"]:
+                if m.get("email", "").lower() == email.lower():
+                    print(f"[OK] Gowid 사용자 확인: {m['userName']} ({email})")
+                    print()
+                    print("셋업 완료! Claude Code에서 '내 경비 보여줘'라고 말해보세요.")
+                    return
+            print(f"[!!] {email} 에 매칭되는 Gowid 사용자가 없습니다.")
+            print("     Gowid에 등록된 이메일과 git email이 일치하는지 확인하세요.")
+        except SystemExit:
+            print("[!!] API 연결 실패 — 키가 올바른지 확인하세요.")
+    elif has_key:
+        print("git email 설정 후 다시 실행하세요: python3 gowid.py setup")
+    else:
+        print("API 키 설정 후 다시 실행하세요: python3 gowid.py setup")
+
 
 def main() -> None:
-    if not API_KEY:
-        _err('GOWID_API_KEY not set. Add to ~/.zshrc (Mac) or $PROFILE (Windows): export GOWID_API_KEY="your_key"')
-
     args = sys.argv[1:]
     cmd = args[0] if args else "help"
 
-    if cmd == "whoami":
+    # API 키가 필요한 커맨드는 사전 체크
+    if cmd not in _LOCAL_COMMANDS and not API_KEY:
+        print("GOWID_API_KEY가 설정되지 않았습니다.")
+        print()
+        print("빠른 셋업: python3 gowid.py setup")
+        print()
+        print("또는 직접 설정:")
+        print("  Mac:     echo 'export GOWID_API_KEY=\"키값\"' >> ~/.zshrc && source ~/.zshrc")
+        print("  Windows: $env:GOWID_API_KEY=\"키값\" (PowerShell $PROFILE에 추가)")
+        print()
+        print("API 키는 Slack #dev-ops 채널 고정 메시지를 확인하세요.")
+        sys.exit(1)
+
+    if cmd == "setup":
+        cmd_setup()
+    elif cmd == "whoami":
         cmd_whoami()
     elif cmd == "my-expenses":
         cmd_my_expenses()
@@ -321,6 +393,7 @@ def main() -> None:
         print("Usage: gowid.py <command>")
         print()
         print("Commands:")
+        print("  setup         첫 실행 셋업 가이드")
         print("  whoami        현재 사용자 확인 (git email → Gowid user)")
         print("  my-expenses   내 미제출 경비 조회")
         print("  detail <id>   경비 상세 조회")
