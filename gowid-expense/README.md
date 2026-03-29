@@ -4,39 +4,13 @@ Gowid 법인카드 경비를 Claude Code에서 자연어로 조회·제출하는
 
 > "내 미제출 경비 보여줘" → 조회 → "1번 식비로 제출해" → 완료
 
-## 설치
+## 설치 (원라이너)
 
 ```bash
-# Claude Code 스킬 설치 (1줄)
 npx skills add EO-Studio-Dev/gowid-expense-skill --skill gowid-expense --agent claude-code -y
 ```
 
-## 셋업 (1회)
-
-설치 후 셋업 가이드를 실행하세요:
-
-```bash
-python3 ~/.claude/skills/gowid-expense/scripts/gowid.py setup
-# Windows: python ~/.claude/skills/gowid-expense/scripts/gowid.py setup
-```
-
-가이드가 git email, API 키, Gowid 연결을 순서대로 확인해줍니다.
-
-수동 설정이 필요하면:
-
-**Mac / Linux:**
-```bash
-echo 'export GOWID_API_KEY="키값"' >> ~/.zshrc && source ~/.zshrc
-```
-
-**Windows (PowerShell):**
-```powershell
-notepad $PROFILE
-# 파일에 추가: $env:GOWID_API_KEY="키값"
-# 저장 후 터미널 재시작
-```
-
-API 키는 Slack `#dev-ops` 채널의 고정 메시지를 확인하세요.
+API 키가 내장되어 있어서 설치만 하면 바로 사용 가능합니다.
 
 ## 사용법
 

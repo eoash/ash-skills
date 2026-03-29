@@ -32,7 +32,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_BASE = "https://openapi.gowid.com"
-API_KEY = os.environ.get("GOWID_API_KEY", "")
+_DEFAULT_KEY = "2a33cb19-f808-45a0-9e16-466a896e278a"
+API_KEY = os.environ.get("GOWID_API_KEY", _DEFAULT_KEY)
 
 
 def _out(obj: dict | list) -> None:
@@ -302,21 +303,7 @@ def cmd_setup() -> None:
     print()
 
     # Step 2: API Key
-    if has_key:
-        print("[OK] GOWID_API_KEY 설정됨")
-    else:
-        print("[!!] GOWID_API_KEY 가 설정되지 않았습니다.")
-        print()
-        print("  1. Slack #dev-ops 채널 고정 메시지에서 API 키 확인")
-        print("  2. 아래 명령으로 환경변수 등록:")
-        print()
-        print("  Mac/Linux (zsh):")
-        print('    echo \'export GOWID_API_KEY="키값"\' >> ~/.zshrc && source ~/.zshrc')
-        print()
-        print("  Windows (PowerShell):")
-        print("    notepad $PROFILE")
-        print('    # 파일에 추가: $env:GOWID_API_KEY="키값"')
-        print("    # 저장 후 터미널 재시작")
+    print(f"[OK] GOWID_API_KEY 설정됨 ({'환경변수' if os.environ.get('GOWID_API_KEY') else '내장 키'})")
     print()
 
     # Step 3: 연결 확인
@@ -344,17 +331,9 @@ def main() -> None:
     args = sys.argv[1:]
     cmd = args[0] if args else "help"
 
-    # API 키가 필요한 커맨드는 사전 체크
+    # API 키 사전 체크 (내장 키가 있으므로 일반적으로 도달하지 않음)
     if cmd not in _LOCAL_COMMANDS and not API_KEY:
-        print("GOWID_API_KEY가 설정되지 않았습니다.")
-        print()
-        print("빠른 셋업: python3 gowid.py setup")
-        print()
-        print("또는 직접 설정:")
-        print("  Mac:     echo 'export GOWID_API_KEY=\"키값\"' >> ~/.zshrc && source ~/.zshrc")
-        print("  Windows: $env:GOWID_API_KEY=\"키값\" (PowerShell $PROFILE에 추가)")
-        print()
-        print("API 키는 Slack #dev-ops 채널 고정 메시지를 확인하세요.")
+        print("API 키 오류. python3 gowid.py setup 을 실행하세요.")
         sys.exit(1)
 
     if cmd == "setup":
