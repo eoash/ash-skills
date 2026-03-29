@@ -1,0 +1,2030 @@
+{
+  "version": "1.0",
+  "description": "Auto-classification rules for Gowid expenses",
+  "rules_count": 289,
+  "rules": [
+    {
+      "store_pattern": "자동결제_3",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TWILIO SENDGRID",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "SendGrid 이메일 발송"
+    },
+    {
+      "store_pattern": "INTUIT *QBOOKS ONLINE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "QuickBooks 회계"
+    },
+    {
+      "store_pattern": "OPENAI *CHATGPT SUBSCR",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.951,
+      "requirement_answer": "ChatGPT 구독"
+    },
+    {
+      "store_pattern": "ZOOM.COM 888-799-9666",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.974,
+      "requirement_answer": "Zoom 화상회의"
+    },
+    {
+      "store_pattern": "PREMIUMBEAT.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "PremiumBeat 음원"
+    },
+    {
+      "store_pattern": "DEEPL* SUB:778UHU4UOFS",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "DeepL 번역"
+    },
+    {
+      "store_pattern": "GEEKBOT LTD",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Geekbot 스탠드업"
+    },
+    {
+      "store_pattern": "DESCRIPT",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Descript 영상편집"
+    },
+    {
+      "store_pattern": "AIRTABLE.COM/BILL",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Airtable DB"
+    },
+    {
+      "store_pattern": "PADDLE.NET* VIEWSTATS",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "ViewStats 유튜브 분석"
+    },
+    {
+      "store_pattern": "MONDAY.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Monday.com 프로젝트 관리"
+    },
+    {
+      "store_pattern": "NOTION LABS, INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Notion 워크스페이스"
+    },
+    {
+      "store_pattern": "CONTACTOUT",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "ContactOut 인재 검색"
+    },
+    {
+      "store_pattern": "VERCEL INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Vercel 호스팅"
+    },
+    {
+      "store_pattern": "페이레터 주식회사",
+      "purpose_id": 12527,
+      "purpose_name": "기타비용",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "X CORP. PAID FEATURES",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "X(Twitter) 프리미엄"
+    },
+    {
+      "store_pattern": "SLACK T087GTVPGVD",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Slack 워크스페이스"
+    },
+    {
+      "store_pattern": "한그라픽스",
+      "purpose_id": 12528,
+      "purpose_name": "판촉물제작비",
+      "confidence": 0.977,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "GITHUB, INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "GitHub 구독"
+    },
+    {
+      "store_pattern": "FIGMA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Figma 디자인"
+    },
+    {
+      "store_pattern": "Amazon_Web Service",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "AWS 클라우드"
+    },
+    {
+      "store_pattern": "LINEAR.APP",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Linear 프로젝트 관리"
+    },
+    {
+      "store_pattern": "주차장",
+      "purpose_id": 28453,
+      "purpose_name": "주차비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "BLACKMAGIC CLOUD",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Blackmagic Cloud 영상편집"
+    },
+    {
+      "store_pattern": "법원행정처",
+      "purpose_id": 12531,
+      "purpose_name": "서류발급비",
+      "confidence": 1.0,
+      "requirement_answer": "법원 서류 발급"
+    },
+    {
+      "store_pattern": "FIREFLIES.AI",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Fireflies 회의 AI"
+    },
+    {
+      "store_pattern": "구글페이먼트",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Google 서비스 구독"
+    },
+    {
+      "store_pattern": "(주)교보문고",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "GAMMA.APP",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Gamma 프레젠테이션"
+    },
+    {
+      "store_pattern": "정기과금_2",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "LILYSAI, INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Lily AI"
+    },
+    {
+      "store_pattern": "SENTRY",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Sentry 에러 모니터링"
+    },
+    {
+      "store_pattern": "KAJABI",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Kajabi 온라인 강의 플랫폼"
+    },
+    {
+      "store_pattern": "PAYPAL *LYFT TEMP AUTH",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.99,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *REVEILLE COFFEE CO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.971,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CLICKUP",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "ClickUp 프로젝트 관리"
+    },
+    {
+      "store_pattern": "CLAUDE.AI SUBSCRIPTION",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Claude 개인 구독"
+    },
+    {
+      "store_pattern": "교보문고_인터넷(문화비)",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SHORTWAVE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Shortwave 이메일"
+    },
+    {
+      "store_pattern": "PAYPAL *NY TIMES NYTIM",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "NYT 뉴스 구독"
+    },
+    {
+      "store_pattern": "AMIE.SO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Amie 캘린더"
+    },
+    {
+      "store_pattern": "DD *DOORDASH MENDOCINO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "EDITINGTOOLS.IO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "EditingTools 편집도구"
+    },
+    {
+      "store_pattern": "TST*CILANTRO SF TAQUER",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CAFFE CAPRICCIO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ANTHROPIC: CLAUDE TEAM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Claude 팀 구독"
+    },
+    {
+      "store_pattern": "LEMSQZY* CARET",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Caret 자막 편집"
+    },
+    {
+      "store_pattern": "GRAIN.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Grain 회의 녹화"
+    },
+    {
+      "store_pattern": "교보문고(웹)_KICC_도서/공연",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "2COCOM*MAXON",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Maxon (Cinema 4D)"
+    },
+    {
+      "store_pattern": "OPUS CLIP",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Opus Clip 숏폼 편집"
+    },
+    {
+      "store_pattern": "WAYMO",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.991,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "WAYMO                  MOUNTAIN VIEW USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "예스이십사도서_문화비",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*THE ITALIAN HOMEMA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "정기과금_0",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "이니시스_문화비_1",
+      "purpose_id": 70602,
+      "purpose_name": "멤버십 구독료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PLAUD LLC",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "PLAUD AI 녹음기 구독"
+    },
+    {
+      "store_pattern": "LOVABLE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Lovable AI 개발"
+    },
+    {
+      "store_pattern": "쿠팡(와우멤버십)",
+      "purpose_id": 12526,
+      "purpose_name": "오사용",
+      "confidence": 0.5,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "ATT*BILL PAYMENT",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "UBER   *TRIP           SAN FRANCISCO USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.97,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *FIDDLE FIG CAFE &",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "H MART SAN FRANCISCO L",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "티머니택시_4",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*JUNBI - SF",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "BOUDIN BAKERY, BAKERS",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *RAMEN NAGI PALO AL",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ADOBE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Adobe Creative Cloud"
+    },
+    {
+      "store_pattern": "MEM AI",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Mem AI 노트"
+    },
+    {
+      "store_pattern": "GRANOLA INC",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Granola 회의 노트"
+    },
+    {
+      "store_pattern": "전자문서용 전자수입인지",
+      "purpose_id": 12531,
+      "purpose_name": "서류발급비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "EPIDEMICSOUND",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Epidemic Sound 음원"
+    },
+    {
+      "store_pattern": "BOX_UK",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Box 클라우드 스토리지"
+    },
+    {
+      "store_pattern": "현장발권-s",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "GOLDEN STAR RESTAURANT",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "문화비_알라딘커뮤니케이션",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "유투브프리미엄",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "YouTube Premium"
+    },
+    {
+      "store_pattern": "MEGA MART SUNNYVALE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TRADER JOE S #019      SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TWITTER ONLINE ADS",
+      "purpose_id": 12530,
+      "purpose_name": "온라인 마케팅",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "OPENAI *CHATGPT SUBSCR SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "ChatGPT 구독"
+    },
+    {
+      "store_pattern": "UNITED",
+      "purpose_id": 94178,
+      "purpose_name": "US-항공비",
+      "confidence": 0.952,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PAYPAL *UBER EATS",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CLAUDE.AI SUBSCRIPTION SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Claude 개인 구독"
+    },
+    {
+      "store_pattern": "JETBLUE",
+      "purpose_id": 94178,
+      "purpose_name": "US-항공비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "Audible                NEWARK        USA",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": "Audible 오디오북"
+    },
+    {
+      "store_pattern": "페이레터 주식회사 - 화이트큐브",
+      "purpose_id": 12527,
+      "purpose_name": "기타비용",
+      "confidence": 1.0,
+      "requirement_answer": "운동해이오"
+    },
+    {
+      "store_pattern": "구글페이먼트 - 구글페이먼트코리아 유한회사",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Google 서비스 구독"
+    },
+    {
+      "store_pattern": "SQ *MUSE JUICE BAR     San Francisco USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "JAGALCHI",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "IN-N-OUT MOUNTAIN VIEW",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "교보문고(웹)_KICC_도서/공연 - 교보문고",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "BUSINESS INSIDER       NEW YORK      USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Business Insider 매거진"
+    },
+    {
+      "store_pattern": "NYTIMES DISC*          NEW YORK      USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "NYT 뉴스 구독"
+    },
+    {
+      "store_pattern": "교보문고_문화비_카카오페이 - (주)교보문고",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "인터넷상거래 - (주)애즈랜드",
+      "purpose_id": 12528,
+      "purpose_name": "판촉물제작비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SUPERHUMAN MAIL",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Superhuman 이메일"
+    },
+    {
+      "store_pattern": "SQ *MAISON NICO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "BOUDIN BAKERY SFO INTE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CROSTINI AND JAVA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "STARBUCKS 10892",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CALENDLY",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Calendly 일정 예약"
+    },
+    {
+      "store_pattern": "APF*MIDTOWN MANAGEMEN",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "CNP* WIRED - DIGITAL S NEW YORK      USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Wired 매거진"
+    },
+    {
+      "store_pattern": "THEVERGE.COM           WASHINGTON DC USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "The Verge 매거진"
+    },
+    {
+      "store_pattern": "LINEAR.APP             SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Linear 프로젝트 관리"
+    },
+    {
+      "store_pattern": "BLOOMBERG* B38580205   NEW YORK      USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Bloomberg 매거진"
+    },
+    {
+      "store_pattern": "MIDJOURNEY INC.        SOUTH SAN FRA USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Midjourney 이미지 생성"
+    },
+    {
+      "store_pattern": "WWW.FORBES.COM         JERSEY CITY   USA",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Forbes 매거진"
+    },
+    {
+      "store_pattern": "AT STUDIO INC.         BURLINGAME    USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "AT Studio"
+    },
+    {
+      "store_pattern": "자동결제 - 한글과컴퓨터",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "한컴오피스 구독"
+    },
+    {
+      "store_pattern": "MAILSUITE              BARCELONA     ESP",
+      "purpose_id": 70602,
+      "purpose_name": "멤버십 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Mailsuite 이메일 추적"
+    },
+    {
+      "store_pattern": "LOVABLE                DOVER         USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Lovable AI 개발"
+    },
+    {
+      "store_pattern": "GITHUB, INC.           SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "GitHub 구독"
+    },
+    {
+      "store_pattern": "자동결제_2",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "D J*WSJ",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "WSJ 매거진"
+    },
+    {
+      "store_pattern": "YUTORI",
+      "purpose_id": 70602,
+      "purpose_name": "멤버십 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Yutori 구독"
+    },
+    {
+      "store_pattern": "CAL.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Cal.com 일정 관리"
+    },
+    {
+      "store_pattern": "CRAFT DOCS",
+      "purpose_id": 70602,
+      "purpose_name": "멤버십 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Craft 문서 편집"
+    },
+    {
+      "store_pattern": "CNP* WIRED - DIGITAL S",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Wired 매거진"
+    },
+    {
+      "store_pattern": "ATTIO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Attio CRM"
+    },
+    {
+      "store_pattern": "LUISA RESTAURANT INC",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "AI.FYXER.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Fyxer AI 이메일 비서"
+    },
+    {
+      "store_pattern": "BUBBA GUMP SAN FRANCIS",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "(주)신안관광",
+      "purpose_id": 15645,
+      "purpose_name": "장소 대관",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SASCO-TTTM16",
+      "purpose_id": 12548,
+      "purpose_name": "국외출장비(식비)",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "LINER INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Liner AI 하이라이터"
+    },
+    {
+      "store_pattern": "CLUELY",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Cluely AI"
+    },
+    {
+      "store_pattern": "SAN FRANCISCO PUC-WEBW",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "쿠팡(와우 멤버십)",
+      "purpose_id": 12526,
+      "purpose_name": "오사용",
+      "confidence": 0.5,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "TOPYAPPERS.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "TopYappers 소셜분석"
+    },
+    {
+      "store_pattern": "2COCOM*2CO.COM*MAXON",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Maxon (Cinema 4D)"
+    },
+    {
+      "store_pattern": "ANTHROPIC",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Anthropic API 크레딧"
+    },
+    {
+      "store_pattern": "LEMSQZY* SCREENSTUDIO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Screen Studio 화면녹화"
+    },
+    {
+      "store_pattern": "FIGMA MONTHLY RENEWAL",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Figma 디자인"
+    },
+    {
+      "store_pattern": "PAYPAL *LYFT TEMP AUTH 4029357733    USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ANTHROPIC  CLAUDE TEAM SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Claude 팀 구독"
+    },
+    {
+      "store_pattern": "UBER   *EATS           SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "REDDIT INC ADS",
+      "purpose_id": 12530,
+      "purpose_name": "온라인 마케팅",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CLICKUP                SAN DIEGO     USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "ClickUp 프로젝트 관리"
+    },
+    {
+      "store_pattern": "LYFT   *TEMP AUTH HOLD SAN FRANCISCO USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "네이버페이 - 주식회사 먼치팩토리",
+      "purpose_id": 15645,
+      "purpose_name": "장소 대관",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "WWW.PERPLEXITY.AI      SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Perplexity AI 검색"
+    },
+    {
+      "store_pattern": "Adobe - Adobe",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Adobe Creative Cloud"
+    },
+    {
+      "store_pattern": "NEW THAI ELEPHANT 2 IN",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "문화비_알라딘커뮤니케이션 - ㈜알라딘커뮤니케이션",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SAFEWAY #1711          SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "2CO.com|Maxon          AMSTERDAM     NLD",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Maxon (Cinema 4D)"
+    },
+    {
+      "store_pattern": "GAMMA.APP              SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Gamma 프레젠테이션"
+    },
+    {
+      "store_pattern": "ZOOM.COM 888-799-9666  SAN JOSE      USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Zoom 화상회의"
+    },
+    {
+      "store_pattern": "네이버페이_예스24_문화비",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST* FIDDLE FIG CAFE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "다날_전자결제",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "한국철도공사(승차권반환수수료)",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "OPENPHONE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "OpenPhone 비즈니스 전화"
+    },
+    {
+      "store_pattern": "주식회사 랄랄라",
+      "purpose_id": 70601,
+      "purpose_name": "장비 대여",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "네이버페이 - ㈜ 교보문고",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "IN-N-OUTFISHERMANSWH   SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*SIGHTGLASS COFFEE  San Francisco USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CAMBLY                 COVINA        USA",
+      "purpose_id": 12538,
+      "purpose_name": "교육훈련비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "AMAZON RETAIL          SEATTLE       USA",
+      "purpose_id": 94181,
+      "purpose_name": "US-소모품비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "데스커_인증_일반 - (주)일룸",
+      "purpose_id": 12534,
+      "purpose_name": "사무용품비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *CAFE #65108 SOHO - New York      USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "NOTION LABS, INC.      SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Notion 워크스페이스"
+    },
+    {
+      "store_pattern": "VERCEL INC.            COVINA        USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Vercel 호스팅"
+    },
+    {
+      "store_pattern": "DD *DOORDASH SHOPRITE  SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*FIDDLE FIG CAFE    San Francisco USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PY *NEW THAI ELEPHANT  SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "모두의주차장(구)",
+      "purpose_id": 28453,
+      "purpose_name": "주차비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *FLYWHEEL COFFEE RO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*DAEHO KALBIJJIM -",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "APPLE ESPR BAR APVC",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "KOREAN",
+      "purpose_id": 94178,
+      "purpose_name": "US-항공비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PG&E/EZ-PAY FEE",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "TST*RED ROCK COFFEE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "DD *DOORDASH SUSHIHON",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PAYPAL *LYFT BAYWHEELS",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *BROOKLYN BREWERY",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "㈜교보문고_인터넷",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *ISPRESSO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ASANA.COM",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Asana 프로젝트 관리"
+    },
+    {
+      "store_pattern": "서울특별시(주차장-오프라인)",
+      "purpose_id": 28453,
+      "purpose_name": "주차비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*COVOUR",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "H MART DE ANZA LLC",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SUBWAY 53934",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "주식회사비지에프네트웍스",
+      "purpose_id": 12546,
+      "purpose_name": "우편비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "GOLDEN GATE DISP & REC SAN FRANCISCO USA",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "UBER CANADA/UBEREATS   TORONTO       CAN",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PAYPAL *UBER BV",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TESLA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CHICK-FIL-A #04932",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TESLA, INC.            Austin        USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "Strand Book Store Reta New York      USA",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "DD *DOORDASH CVS       SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "WWW.SWEETGREEN.COM     LOS ANGELES   USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "MAXWELL FOOD CTR #01-3",
+      "purpose_id": 12548,
+      "purpose_name": "국외출장비(식비)",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*MARIOS NB",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "HAWAIIAN",
+      "purpose_id": 94178,
+      "purpose_name": "US-항공비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "IWGPLC.COM",
+      "purpose_id": 85714,
+      "purpose_name": "사무실임대료",
+      "confidence": 1.0,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "SQ *BOWL\\'D ACAI",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CITY OF CAMBRIDGE",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST* FRIENDS BAR - AUS",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "(주)희성양행",
+      "purpose_id": 12531,
+      "purpose_name": "서류발급비",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": ".OP*GSM",
+      "purpose_id": 76491,
+      "purpose_name": "국외출장비(교통비+항공)",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "자동결제_0",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "LG U+ 통신요금 자동이체",
+      "purpose_id": 72341,
+      "purpose_name": "통신비",
+      "confidence": 0.9,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "FRAME.IO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.929,
+      "requirement_answer": "Frame.io 영상 리뷰"
+    },
+    {
+      "store_pattern": "WWW.FORBES.COM",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 0.8,
+      "requirement_answer": "Forbes 매거진"
+    },
+    {
+      "store_pattern": "카카오 T 비즈",
+      "purpose_id": 12539,
+      "purpose_name": "퀵사용료",
+      "confidence": 0.859,
+      "requirement_answer": "카카오T 비즈 퀵/배송"
+    },
+    {
+      "store_pattern": "우정사업본부(우체국)",
+      "purpose_id": 12546,
+      "purpose_name": "우편비",
+      "confidence": 0.947,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "WWW.PERPLEXITY.AI",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.947,
+      "requirement_answer": "Perplexity AI 검색"
+    },
+    {
+      "store_pattern": "ZAPIER.COM/CHARGE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.882,
+      "requirement_answer": "Zapier 자동화"
+    },
+    {
+      "store_pattern": "TURBOSCRIBE.AI",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.917,
+      "requirement_answer": "TurboScribe 자막 생성"
+    },
+    {
+      "store_pattern": "2CO.COM|MAXON",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.923,
+      "requirement_answer": "Maxon (Cinema 4D)"
+    },
+    {
+      "store_pattern": "ELEVENLABS.IO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.88,
+      "requirement_answer": "ElevenLabs AI 음성"
+    },
+    {
+      "store_pattern": "한국정보통신(주)",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.846,
+      "requirement_answer": "한국정보통신 POS/결제단말"
+    },
+    {
+      "store_pattern": "BUSINESS INSIDER",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 0.833,
+      "requirement_answer": "Business Insider 매거진"
+    },
+    {
+      "store_pattern": "BLOOMBERG* B38580205",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 0.889,
+      "requirement_answer": "Bloomberg 매거진"
+    },
+    {
+      "store_pattern": "TRADER JOE S #019",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.943,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "Adobe",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.885,
+      "requirement_answer": "Adobe Creative Cloud"
+    },
+    {
+      "store_pattern": "SQ *SAINT FRANK COFFEE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.85,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SHUTTERSTOCK IRELAND L",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.909,
+      "requirement_answer": "Shutterstock 이미지/영상"
+    },
+    {
+      "store_pattern": "Apple",
+      "purpose_id": 12526,
+      "purpose_name": "오사용",
+      "confidence": 0.833,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "CITY OF PALO ALTO",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 0.833,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "PEET\\'S #10102",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.818,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST* EQUATOR COFFEES -",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.938,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PAYPAL *UBER",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.889,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *MUSE JUICE BAR",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.933,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PY *NEW THAI ELEPHANT",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.909,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "MIFEN101",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.889,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *VICTORIA PASTRY CO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TCB*MTA METER MTA MCK",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *CAFE FRANCISCO",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.846,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ARCO#83556PALO ALTOQPS",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.875,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PG&E/EZ-PAY",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 0.833,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "MINT MOBILE",
+      "purpose_id": 72341,
+      "purpose_name": "통신비",
+      "confidence": 0.833,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "DD *DOORDASH DASHMART",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *LAPPERTS ICE CREAM",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *COMPTON\\'S COFFEE H",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "UBER   * PENDING       SAN FRANCISCO USA",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.939,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TIRO BY THEPLATO       WILMINGTON    USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.931,
+      "requirement_answer": "Tiro 서버 호스팅"
+    },
+    {
+      "store_pattern": "카카오T - 카카오모빌리티",
+      "purpose_id": 12539,
+      "purpose_name": "퀵사용료",
+      "confidence": 0.9,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "KCP결제 - (주)트래블로버",
+      "purpose_id": 97864,
+      "purpose_name": "US-보험비",
+      "confidence": 0.857,
+      "requirement_answer": "미국법인 보험"
+    },
+    {
+      "store_pattern": "SR",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.833,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "에어프레미아 BSP",
+      "purpose_id": 76491,
+      "purpose_name": "국외출장비(교통비+항공)",
+      "confidence": 0.833,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "타다(TADA)법인_4",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ANTHROPIC              SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.875,
+      "requirement_answer": "Anthropic API 크레딧"
+    },
+    {
+      "store_pattern": "SQ *CAFE #27255 UNION",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.857,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*CILANTRO SF TAQUER San Francisco USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.833,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*FIDDLE FIG CAFE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CHICK-FIL-A #02772",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.8,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "지하철",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.778,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "NICE_통신판매",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "UBER   *TRIP",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 0.795,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "Amazon",
+      "purpose_id": 94181,
+      "purpose_name": "US-소모품비",
+      "confidence": 0.724,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *BLUE BOTTLE COFFEE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.789,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TIRO BY THEPLATO",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.729,
+      "requirement_answer": "Tiro 서버 호스팅"
+    },
+    {
+      "store_pattern": "STARBUCKS STORE 10892",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.792,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "교보문고_문화비_카카오페이",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 0.769,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *PHILZ COFFEE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.778,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "서울보증보험 강남지점_온라인",
+      "purpose_id": 12531,
+      "purpose_name": "서류발급비",
+      "confidence": 0.778,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "GOLDEN GATE DISP & REC",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 0.75,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "하이패스 기타",
+      "purpose_id": 12540,
+      "purpose_name": "유류비",
+      "confidence": 0.714,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "페이레터N(대표)",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.5,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SAFEWAY #1711",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.727,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "IN-N-OUTFISHERMANSWHAR",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.769,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "DD *DOORDASHDOUBLEDASH",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.714,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SONIC.NET",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 1.0,
+      "requirement_answer": "Sonic 인터넷 (미국 사무실)"
+    },
+    {
+      "store_pattern": "DD *DOORDASH DAEHOKALB",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST*TARTINE MANUFACTOR",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SQ *VERVE COFFEE UNIVE",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "리디(Ridi)_자동과금",
+      "purpose_id": 12537,
+      "purpose_name": "도서구입비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "BLOOMBERG* B38381039",
+      "purpose_id": 12536,
+      "purpose_name": "매거진 구독료",
+      "confidence": 0.75,
+      "requirement_answer": "Bloomberg 매거진"
+    },
+    {
+      "store_pattern": "SQ *REVEILLE COFFEE CO San Francisco USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "TST* EQUATOR COFFEES - SAN FRANCISCO USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "SIREN47906             NEW YORK      USA",
+      "purpose_id": 94177,
+      "purpose_name": "US-식비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "PG&E/EZ-PAY            OAKLAND       USA",
+      "purpose_id": 96117,
+      "purpose_name": "US-사무실임대료관리비",
+      "confidence": 0.75,
+      "requirement_answer": ""
+    },
+    {
+      "store_pattern": "United Airlines - Kore Houston       USA",
+      "purpose_id": 94178,
+      "purpose_name": "US-항공비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "금융결제원(전자수입인지)",
+      "purpose_id": 12531,
+      "purpose_name": "서류발급비",
+      "confidence": 0.75,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "CURSOR, AI POWERED IDE",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Cursor AI 에디터"
+    },
+    {
+      "store_pattern": "CAPCUT",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.71,
+      "requirement_answer": "CapCut 영상편집"
+    },
+    {
+      "store_pattern": "CUCKOO LABS, INC.",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Cuckoo AI"
+    },
+    {
+      "store_pattern": "손해보험_카카오페이",
+      "purpose_id": 97864,
+      "purpose_name": "US-보험비",
+      "confidence": 1.0,
+      "requirement_answer": "미국 출장 여행자보험"
+    },
+    {
+      "store_pattern": "보험_카카오페이(손해)",
+      "purpose_id": 97864,
+      "purpose_name": "US-보험비",
+      "confidence": 1.0,
+      "requirement_answer": "미국 출장 여행자보험"
+    },
+    {
+      "store_pattern": "우버택시",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "우버택시(법인)",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "ETOLLBGT",
+      "purpose_id": 94179,
+      "purpose_name": "US-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": "미국 톨게이트"
+    }
+  ]
+}
