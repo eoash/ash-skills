@@ -11,8 +11,18 @@ triggers:
 
 # Cash Position 자동 업데이트
 
-Plaid API(Chase/Hanmi) + Clobe(한국) + 우리VN 데이터를 조회하여
+3개 법인(한국/미국/베트남) 은행 잔액·입출금을 조회하여
 Google Sheets Cash Position Summary를 업데이트하는 스킬.
+
+## 데이터 소스별 자동화 현황
+
+| 법인 | 은행 | 소스 | 자동화 | 옵션 |
+|------|------|------|--------|------|
+| US | Chase (checking ...6797) | Plaid API | **자동** (CSV 불필요) | `--plaid` |
+| US | Hanmi (checking ...3389) | Plaid API | **자동** (CSV 불필요) | `--plaid` |
+| KR | 농협/우리/신한 등 | Clobe.ai 엑셀 | 수동 다운로드 필요 | `--clobe` |
+| VN | 우리은행 베트남 | 우리은행 xls | 수동 다운로드 필요 | `--vietnam` |
+| VN | Techcombank | CSV | 수동 다운로드 필요 | `--techcombank` |
 
 ## 핵심 스크립트
 
@@ -24,14 +34,16 @@ scripts/parse_cash_position.py
 
 ## 사용법
 
-### 1. 미국 은행만 (Plaid API — CSV 불필요)
+### 1. 미국만 (Plaid API — 파일 다운로드 불필요)
 
 ```bash
 /Users/ash/Documents/eoash/.venv/bin/python scripts/parse_cash_position.py \
   --plaid --month {YYYY.MM} [--dry-run] [--skip-revenue]
 ```
 
-### 2. 전체 (한국 + 미국 + 베트남)
+사용자가 "미국 잔액", "US cash" 등 미국만 언급하면 이 모드 사용.
+
+### 2. 전체 3개 법인 (미국 자동 + 한국/베트남 파일)
 
 ```bash
 /Users/ash/Documents/eoash/.venv/bin/python scripts/parse_cash_position.py \
@@ -40,6 +52,11 @@ scripts/parse_cash_position.py
   --vietnam ~/Downloads/ExcelSheet*.xls \
   --month {YYYY.MM}
 ```
+
+사용자가 "캐시 포지션 업데이트", "전체 잔액" 등 전체를 요청하면:
+- 미국: `--plaid`로 자동 조회
+- 한국: Clobe.ai에서 엑셀 다운로드했는지 확인 → 파일 경로 요청
+- 베트남: 우리은행에서 xls 다운로드했는지 확인 → 파일 경로 요청
 
 ### 3. CSV 방식 (레거시 — Plaid 장애 시 fallback)
 
@@ -50,6 +67,8 @@ scripts/parse_cash_position.py
   --clobe ~/Downloads/주식회사*.xlsx \
   --month {YYYY.MM}
 ```
+
+Plaid API 장애 시에만 사용. Chase/Hanmi 웹뱅킹에서 CSV 직접 다운로드 필요.
 
 ## 실행 흐름
 
@@ -63,9 +82,9 @@ scripts/parse_cash_position.py
 | 옵션 | 설명 |
 |------|------|
 | `--plaid` | Chase/Hanmi를 Plaid API로 조회 (CSV 불필요) |
-| `--clobe` | 한국 Clobe.ai 엑셀 파일 경로 |
-| `--vietnam` | 우리은행 베트남 xls 경로 |
-| `--techcombank` | Techcombank 베트남 CSV 경로 |
+| `--clobe` | 한국 Clobe.ai 엑셀 파일 경로 (수동 다운로드) |
+| `--vietnam` | 우리은행 베트남 xls 경로 (수동 다운로드) |
+| `--techcombank` | Techcombank 베트남 CSV 경로 (수동 다운로드) |
 | `--month` | 대상 월 (예: 2026.03) — **필수** |
 | `--skip-revenue` | 미국 매출/한국 미수금 업데이트 건너뜀 |
 | `--dry-run` | 시트 업데이트 없이 결과만 출력 |
@@ -83,4 +102,5 @@ scripts/parse_cash_position.py
 
 - `--dry-run` 없이 실행하면 Google Sheets가 직접 수정됨 — 반드시 먼저 dry-run
 - Plaid access_token은 영구 토큰이지만, 은행 비밀번호 변경 시 재연결 필요
-- 한국/베트남은 여전히 파일 필요 (Clobe 엑셀, 우리은행 xls)
+- 한국/베트남은 Plaid 미지원 → 파일 다운로드 필수 (자동화 불가)
+- 은행 재연결 필요 시: `python scripts/plaid_link_connect.py` → localhost:8484
