@@ -115,6 +115,32 @@ AskUserQuestion({
 2. `마지막 업데이트` 날짜를 오늘 날짜로 갱신
 3. 변경된 CLAUDE.md를 커밋에 포함
 
+### Step 6: Rocky 동기화 (자동)
+
+**모든 옵션(건너뛰기 제외) 실행 후 자동으로 Rocky에게 세션 학습 내용을 동기화한다.**
+
+1. learning-extractor와 followup-suggester 결과를 Rocky 포맷으로 변환:
+   ```
+   ### [날짜] [세션 요약 한 줄]
+   - **작업 (what)**: 이 세션에서 한 일 요약
+   - **결정 (decision)**: 핵심 판단 사항
+   - **왜 (why)**: 그 순서/방법을 택한 이유
+   - **학습 (learning)**: Rocky가 배울 점 (learning-extractor 결과 활용)
+   - **다음 (next)**: 다음 할 일 (followup-suggester 결과 활용)
+   ```
+2. SSH로 맥미니에 push:
+   ```bash
+   ssh macmini "cat >> /Users/eo_openclaw1/Documents/eoash/project-hailmary/workspace_memory/macbook_sync.md" <<< "$ENTRY"
+   ```
+3. Slack `#project-hailmary` 채널에 알림 전송 (Rocky가 새 sync를 확인하도록)
+
+**독립 실행도 가능:**
+```bash
+bash scripts/sync_to_rocky.sh "세션 제목"
+```
+
+**Rocky sync 실패 시**: 에러 메시지만 출력하고 세션 마무리는 정상 완료 (sync 실패가 전체 wrap을 막지 않음)
+
 ---
 
 ## Quick Reference
@@ -160,6 +186,11 @@ AskUserQuestion({
                        │
 ┌──────────────────────▼──────────────────────┐
 │  Step 5. 선택된 작업 실행                      │
+└──────────────────────┬──────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────┐
+│  Step 6. Rocky 동기화 (SSH → macbook_sync.md) │
+│  + Slack #project-hailmary 알림              │
 └─────────────────────────────────────────────┘
 ```
 
