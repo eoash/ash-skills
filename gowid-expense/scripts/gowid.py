@@ -147,11 +147,11 @@ def cmd_my_expenses() -> None:
     # 이번 달 1일 기준 cutoff
     cutoff = datetime.now().strftime("%Y%m") + "01"
 
-    # 페이징으로 미제출 경비 전체 조회
+    # V2 API로 미제출 경비 조회 (cardUserName, memo, purpose, participants 포함)
     all_expenses: list[dict] = []
     page = 0
     while page <= 20:
-        resp = _api_get(f"/v1/expenses/not-submitted?page={page}&size=50")
+        resp = _api_get(f"/v2/expenses?page={page}&size=50&sort=expenseDate,desc")
         content = resp["data"].get("content", [])
         if not content:
             break
@@ -160,37 +160,47 @@ def cmd_my_expenses() -> None:
             break
         page += 1
 
-    # 본인 경비만 필터 (cardAlias에 사용자 이름 포함 여부로 판별)
+    # 본인 미제출 경비만 필터 (V2 cardUserName으로 정확 매칭)
     my_expenses = []
     for e in all_expenses:
-        alias = e.get("cardAlias") or ""
-        if user_name in alias and e.get("expenseDate", "") >= cutoff:
-            short_card = e.get("shortCardNumber") or ""
-            my_expenses.append({
-                "expenseId": e.get("expenseId"),
-                "storeName": e.get("storeName", ""),
-                "useAmount": e.get("useAmount", 0),
-                "krwAmount": e.get("krwAmount", 0),
-                "currency": e.get("currency", "KRW"),
-                "expenseDate": e.get("expenseDate", ""),
-                "expenseTime": e.get("expenseTime", ""),
-                "cardNumber": short_card,
-                "suggestedPurpose": (e.get("recommendedPurposeList") or [{}])[0].get("name", ""),
-            })
+        card_user = e.get("cardUserName") or ""
+        if card_user != user_name:
+            continue
+        if e.get("approvalStatus") != "NOT_SUBMITTED":
+            continue
+        if e.get("expenseDate", "") < cutoff:
+            continue
+        purpose = e.get("purpose") or {}
+        my_expenses.append({
+            "expenseId": e.get("expenseId"),
+            "storeName": e.get("storeName", ""),
+            "storeAddress": e.get("storeAddress", ""),
+            "useAmount": e.get("useAmount", 0),
+            "krwAmount": e.get("krwAmount", 0),
+            "currency": e.get("currency", "KRW"),
+            "expenseDate": e.get("expenseDate", ""),
+            "expenseTime": e.get("expenseTime", ""),
+            "cardNumber": e.get("shortCardNumber") or "",
+            "purpose": purpose.get("name", ""),
+            "memo": e.get("memo") or "",
+            "participantCount": e.get("participantCount", 0),
+            "requirementAnswers": e.get("purposeRequirementAnswers", []),
+        })
 
-    my_expenses.sort(key=lambda x: x["expenseDate"], reverse=True)
     _out({"count": len(my_expenses), "expenses": my_expenses})
 
 
 def cmd_detail(expense_id: str) -> None:
-    resp = _api_get(f"/v1/expenses/{expense_id}")
+    resp = _api_get(f"/v2/expenses/{expense_id}")
     d = resp["data"]
     card = d.get("card") or {}
-    user = card.get("cardUser") or {}
+    card_user = card.get("cardUser") or {}
+    user = d.get("user") or card_user
     card_num = card.get("cardNumber", "") or ""
     _out({
         "expenseId": d.get("expenseId"),
         "storeName": d.get("storeName", ""),
+        "storeAddress": d.get("storeAddress", ""),
         "useAmount": d.get("useAmount", 0),
         "currency": d.get("currency", "KRW"),
         "expenseDate": d.get("expenseDate", ""),
@@ -201,6 +211,10 @@ def cmd_detail(expense_id: str) -> None:
         "cardNumber": card_num[-4:] if card_num else "",
         "cardAlias": card.get("alias", ""),
         "userName": user.get("userName", ""),
+        "userEmail": user.get("email", ""),
+        "participants": d.get("participants", []),
+        "requirementAnswers": d.get("purposeRequirementAnswers", []),
+        "comments": d.get("comments", []),
     })
 
 
