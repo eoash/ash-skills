@@ -108,6 +108,31 @@ Topic별 상세 내용도 핵심만 한국어로 정리.
 3. 서현 액션 아이템 목록
 4. "Notion에도 반영할까요?" 확인 (GHW인 경우)
 
+### Step 5 (선택): Notion GHW 페이지 반영
+
+GHW(Global Heads Weekly) 미팅인 경우, 다이제스트 완료 후 "Notion에도 반영할까요?" 확인.
+
+사용자가 승인하면:
+1. `scripts/lib/notion.py`의 `NotionWriter` 사용
+2. GHW Notion DB에 해당 주차 페이지 찾기 (collection://2c274768-ec37-81b9-a773-000b8a63f034)
+3. Seohyun 섹션에 다이제스트 핵심 요약 + 액션 아이템 추가
+4. **반드시 사용자 컨펌 후** API 호출 (feedback_notion_confirm 규칙)
+
+## 자동 알림 (폴링)
+
+`scripts/tools/meeting_digest_poll.py`가 새 미팅 노트를 감지하면 Slack DM으로 알림.
+
+```bash
+# 수동 실행
+python3 scripts/tools/meeting_digest_poll.py
+
+# 테스트 (알림 없이)
+python3 scripts/tools/meeting_digest_poll.py --dry-run
+```
+
+launchd로 15분 간격 자동 실행 설정 가능.
+알림 대상: 서현 DM (SLACK_USER_ID: U04PJRXKM1Y)
+
 ## 주의사항
 
 - 원본은 Read.ai가 영어로 생성 → 다이제스트는 반드시 한국어로
@@ -118,5 +143,7 @@ Topic별 상세 내용도 핵심만 한국어로 정리.
 ## 환경 요구사항
 
 - `CLICKUP_API_KEY`: eo-portal/.env.local에 설정됨
+- `SLACK_BOT_TOKEN`: .env에 설정됨 (Ash Bot 앱)
 - 저장 경로: `~/Documents/eo-wiki/meetings/`
 - ClickUp Workspace ID: `90181381526`
+- Notion GHW DB: `2c274768-ec37-81b9-a773-000b8a63f034`
