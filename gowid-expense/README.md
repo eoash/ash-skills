@@ -1,20 +1,23 @@
 # gowid-expense
 
-Gowid 법인카드 경비를 Claude Code에서 자연어로 조회·제출하는 스킬.
+Gowid 법인카드 경비를 Claude Code / Codex에서 자연어로 조회·제출하는 스킬.
 
 > "내 미제출 경비 보여줘" → 조회 → "1번 식비로 제출해" → 완료
 
-## 설치 (원라이너)
+## 설치
 
 ```bash
+# Claude Code
 npx skills add EO-Studio-Dev/gowid-expense-skill --skill gowid-expense --agent claude-code -y
+
+# Codex는 설치 후 ~/.codex/skills/gowid-expense 에 연결되도록 배치
 ```
 
 API 키가 내장되어 있어서 설치만 하면 바로 사용 가능합니다.
 
 ## 사용법
 
-Claude Code에서 자연어로 요청하면 됩니다.
+Claude Code 또는 Codex에서 자연어로 요청하면 됩니다.
 
 **경비 조회**
 ```

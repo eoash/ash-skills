@@ -12,18 +12,21 @@ triggers:
 
 # Gowid 경비 어시스턴트
 
-Gowid 법인카드 미제출 경비를 조회하고, 용도를 지정하여 제출하는 Claude Code 스킬.
+Gowid 법인카드 미제출 경비를 조회하고, 용도를 지정하여 제출하는 Claude Code / Codex 공용 스킬.
 
 ## 셋업 확인
 
 스킬 실행 시 **반드시 먼저** 아래를 확인:
 
 ```bash
-# 1. API 키 확인 (없으면 에러 메시지 출력됨)
+# Codex 설치 경로
+python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
+
+# Claude Code 설치 경로
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
 
-# 2. Windows 사용자는 python3 대신 python 사용
-python ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
+# Windows 사용자는 python3 대신 python 사용
+python ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
 ```
 
 API 키는 스크립트에 내장되어 있어 별도 설정 불필요.
@@ -32,17 +35,19 @@ API 키는 스크립트에 내장되어 있어 별도 설정 불필요.
 
 ```bash
 # git 이메일로 Gowid userId 조회
-python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
-# Windows: python ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
+python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
+# Claude Code: python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
+# Windows: python ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
 ```
 
 `whoami` 결과에서 `userId`를 이후 모든 요청의 사용자 식별자로 사용.
 
 ## 헬퍼 스크립트
 
-모든 API 호출은 `scripts/gowid.py`를 통해 수행. 경로:
+모든 API 호출은 `scripts/gowid.py`를 통해 수행. 설치 경로 예시:
 
 ```
+~/.codex/skills/gowid-expense/scripts/gowid.py
 ~/.claude/skills/gowid-expense/scripts/gowid.py
 ```
 
