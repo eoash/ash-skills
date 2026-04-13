@@ -119,27 +119,27 @@ AskUserQuestion({
 
 **모든 옵션(건너뛰기 제외) 실행 후 자동으로 Rocky에게 세션 학습 내용을 동기화한다.**
 
-1. learning-extractor와 followup-suggester 결과를 Rocky 포맷으로 변환:
-   ```
-   ### [날짜] [세션 요약 한 줄]
-   - **작업 (what)**: 이 세션에서 한 일 요약
-   - **결정 (decision)**: 핵심 판단 사항
-   - **왜 (why)**: 그 순서/방법을 택한 이유
-   - **학습 (learning)**: Rocky가 배울 점 (learning-extractor 결과 활용)
-   - **다음 (next)**: 다음 할 일 (followup-suggester 결과 활용)
-   ```
-2. SSH로 맥미니에 push:
+1. learning-extractor와 followup-suggester 결과에서 실제 내용을 추출한다:
+   - `SYNC_DECISION` — 이 세션의 핵심 판단 사항 (1~2문장)
+   - `SYNC_WHY` — 그 방법/순서를 택한 이유
+   - `SYNC_LEARNING` — Rocky가 배울 점 (learning-extractor 결과 활용)
+   - `SYNC_NEXT` — 후속 작업 (followup-suggester 결과 활용)
+
+   **추출 불가 시 (짧은 세션, 학습 포인트 없음 등): Step 6 전체 skip — 아래 명령 실행하지 않음**
+
+2. 추출 성공 시 `sync_to_rocky.sh` 호출 (webhook → bot token 순으로 Slack 알림):
    ```bash
-   ssh macmini "cat >> /Users/eo_openclaw1/Documents/eoash/project-hailmary/workspace_memory/macbook_sync.md" <<< "$ENTRY"
+   export SYNC_DECISION="<핵심 판단>"
+   export SYNC_WHY="<이유>"
+   export SYNC_LEARNING="<Rocky가 배울 점>"
+   export SYNC_NEXT="<다음 할 일>"
+   bash scripts/sync_to_rocky.sh "세션 요약 한 줄"
    ```
-3. Slack `#project-hailmary` 채널에 알림 전송 (Rocky가 새 sync를 확인하도록)
 
-**독립 실행도 가능:**
-```bash
-bash scripts/sync_to_rocky.sh "세션 제목"
-```
+   - exit 2 반환 시: 내용 미완성 → 에러 메시지 출력 후 skip (세션 wrap 계속)
+   - SSH 오류 등 기타 실패: 에러 메시지만 출력, wrap 정상 완료
 
-**Rocky sync 실패 시**: 에러 메시지만 출력하고 세션 마무리는 정상 완료 (sync 실패가 전체 wrap을 막지 않음)
+**Rocky sync 실패/skip은 세션 마무리를 막지 않는다.**
 
 ---
 
