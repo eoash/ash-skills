@@ -5,7 +5,10 @@ Usage: python3 gowid.py <command> [args]
 
 Commands:
   whoami                          현재 사용자 확인 (git email → Gowid user)
-  my-expenses                     내 미제출 경비 조회
+  my-expenses [--month YYYYMM] [--all]
+                                  미제출 경비 조회 (기본: 이번 달, 본인)
+                                  --month 202603  → 2026년 3월 조회
+                                  --all           → 전체 사용자 (관리자용)
   detail <id>                     경비 상세 조회
   submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]
   purposes                        용도 목록 (필수항목 상세 포함)
@@ -129,7 +132,7 @@ def cmd_whoami() -> None:
     _err(f"{email} 에 매칭되는 Gowid 사용자가 없습니다. git email과 Gowid 등록 이메일이 같은지 확인하세요.")
 
 
-def cmd_my_expenses() -> None:
+def cmd_my_expenses(month: str = "", show_all: bool = False) -> None:
     email = _git_email()
     if not email:
         _err("git config user.email not set")
@@ -144,14 +147,29 @@ def cmd_my_expenses() -> None:
     if not user_name:
         _err(f"Gowid에서 {email} 사용자를 찾을 수 없습니다. git email과 Gowid 등록 이메일이 같은지 확인하세요.")
 
-    # 이번 달 1일 기준 cutoff
-    cutoff = datetime.now().strftime("%Y%m") + "01"
+    # 날짜 범위 계산
+    if month:
+        # --month YYYYMM → 해당 월 전체
+        ym = month.replace("-", "")[:6]
+        start_date = ym + "01"
+        # 월말 계산
+        y, m_int = int(ym[:4]), int(ym[4:6])
+        if m_int == 12:
+            end_date = f"{y + 1}0101"
+        else:
+            end_date = f"{y}{m_int + 1:02d}01"
+        date_params = f"&startDate={start_date}&endDate={end_date}"
+    else:
+        # 기본: 이번 달
+        start_date = datetime.now().strftime("%Y%m") + "01"
+        date_params = f"&startDate={start_date}"
 
     # V2 API로 미제출 경비 조회 (cardUserName, memo, purpose, participants 포함)
     all_expenses: list[dict] = []
     page = 0
-    while page <= 20:
-        resp = _api_get(f"/v2/expenses?page={page}&size=50&sort=expenseDate,desc")
+    max_pages = 50 if show_all else 20
+    while page <= max_pages:
+        resp = _api_get(f"/v2/expenses?page={page}&size=50&sort=expenseDate,desc{date_params}")
         content = resp["data"].get("content", [])
         if not content:
             break
@@ -160,16 +178,15 @@ def cmd_my_expenses() -> None:
             break
         page += 1
 
-    # 본인 미제출 경비만 필터 (V2 cardUserName으로 정확 매칭)
+    # 필터: 미제출만, --all이 아니면 본인만
     my_expenses = []
     for e in all_expenses:
-        card_user = e.get("cardUserName") or ""
-        if card_user != user_name:
-            continue
         if e.get("approvalStatus") != "NOT_SUBMITTED":
             continue
-        if e.get("expenseDate", "") < cutoff:
-            continue
+        if not show_all:
+            card_user = e.get("cardUserName") or ""
+            if card_user != user_name:
+                continue
         purpose = e.get("purpose") or {}
         my_expenses.append({
             "expenseId": e.get("expenseId"),
@@ -181,6 +198,7 @@ def cmd_my_expenses() -> None:
             "expenseDate": e.get("expenseDate", ""),
             "expenseTime": e.get("expenseTime", ""),
             "cardNumber": e.get("shortCardNumber") or "",
+            "cardUserName": e.get("cardUserName") or "",
             "purpose": purpose.get("name", ""),
             "memo": e.get("memo") or "",
             "participantCount": e.get("participantCount", 0),
@@ -249,11 +267,7 @@ def cmd_submit(expense_id: str, purpose_id: str,
         })
         return
 
-    # 메모 설정
-    if memo:
-        _api_put(f"/v1/expenses/{expense_id}/memo", {"memo": memo})
-
-    # 제출
+    # 제출 (V2 body에 memo 포함되므로 별도 메모 PUT 불필요)
     body: dict = {"purposeId": int(purpose_id)}
     if participants:
         body["participantIdList"] = [int(p.strip()) for p in participants.split(",") if p.strip()]
@@ -262,7 +276,8 @@ def cmd_submit(expense_id: str, purpose_id: str,
     if req_map:
         body["purposeRequirementAnswerMap"] = req_map
 
-    _api_put(f"/v1/expenses/{expense_id}", body)
+    # V2 API 사용 — V1은 purposeRequirementAnswerMap 처리 시 400 반환
+    _api_put(f"/v2/expenses/{expense_id}", body)
     _out({"success": True, "expenseId": int(expense_id), "purposeId": int(purpose_id), "memo": memo})
 
 
@@ -434,7 +449,16 @@ def main() -> None:
     elif cmd == "whoami":
         cmd_whoami()
     elif cmd == "my-expenses":
-        cmd_my_expenses()
+        month, show_all = "", False
+        i = 1
+        while i < len(args):
+            if args[i] == "--month" and i + 1 < len(args):
+                month = args[i + 1]; i += 2
+            elif args[i] == "--all":
+                show_all = True; i += 1
+            else:
+                i += 1
+        cmd_my_expenses(month=month, show_all=show_all)
     elif cmd == "detail":
         if len(args) < 2:
             _err("Usage: gowid.py detail <expenseId>")
@@ -473,7 +497,10 @@ def main() -> None:
         print("Commands:")
         print("  setup                    첫 실행 셋업 가이드")
         print("  whoami                   현재 사용자 확인 (git email → Gowid user)")
-        print("  my-expenses              내 미제출 경비 조회")
+        print("  my-expenses [--month YYYYMM] [--all]")
+        print("                           미제출 경비 조회 (기본: 이번 달, 본인)")
+        print("                           --month 202603  → 특정 월 조회")
+        print("                           --all           → 전체 사용자 (관리자용)")
         print("  detail <id>              경비 상세 조회")
         print("  submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]")
         print("                           경비 제출 (필수항목 포함)")

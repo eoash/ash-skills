@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Auto-classification rules for Gowid expenses",
-  "rules_count": 289,
+  "rules_count": 324,
   "rules": [
     {
       "store_pattern": "자동결제_3",
@@ -2025,6 +2025,251 @@
       "purpose_name": "US-여비교통비",
       "confidence": 1.0,
       "requirement_answer": "미국 톨게이트"
+    },
+    {
+      "store_pattern": "DD *DOORDASH",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.95,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "TST*",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.9,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "SQ *",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.8,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "CHIPOTLE",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 1.0,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "CHICK-FIL-A",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 1.0,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "TRADER JOE",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.9,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "HOUSE OF DIM SUM",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 1.0,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "TARTINE",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 1.0,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "STARBUCKS",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.85,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "7-ELEVEN",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.8,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "BLUE BOTTLE",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.95,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "BLANK STREET",
+      "purpose_id": 94177,
+      "purpose_name": "미국법인-식비",
+      "confidence": 0.95,
+      "requirement_answer": "식비"
+    },
+    {
+      "store_pattern": "LYFT",
+      "purpose_id": 94179,
+      "purpose_name": "미국법인-여비교통비",
+      "confidence": 0.95,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "UBER",
+      "purpose_id": 94179,
+      "purpose_name": "미국법인-여비교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "BOUNCE",
+      "purpose_id": 94179,
+      "purpose_name": "미국법인-여비교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "BUDGET RENT",
+      "purpose_id": 94179,
+      "purpose_name": "미국법인-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": "렌터카"
+    },
+    {
+      "store_pattern": "SmarteCarte",
+      "purpose_id": 94179,
+      "purpose_name": "미국법인-여비교통비",
+      "confidence": 1.0,
+      "requirement_answer": "공항 카트"
+    },
+    {
+      "store_pattern": "ALASKA A",
+      "purpose_id": 94178,
+      "purpose_name": "미국법인-항공비",
+      "confidence": 1.0,
+      "requirement_answer": "출장"
+    },
+    {
+      "store_pattern": "DELTA",
+      "purpose_id": 94178,
+      "purpose_name": "미국법인-항공비",
+      "confidence": 0.9,
+      "requirement_answer": "출장"
+    },
+    {
+      "store_pattern": "에어프레미아",
+      "purpose_id": 76491,
+      "purpose_name": "국외출장비(교통비+항공)",
+      "confidence": 1.0,
+      "requirement_answer": "한국-미국"
+    },
+    {
+      "store_pattern": "AIRBNB",
+      "purpose_id": 76493,
+      "purpose_name": "국외출장비(숙박비)",
+      "confidence": 0.95,
+      "requirement_answer": "출장"
+    },
+    {
+      "store_pattern": "BOOKING HOTEL",
+      "purpose_id": 76493,
+      "purpose_name": "국외출장비(숙박비)",
+      "confidence": 1.0,
+      "requirement_answer": "출장"
+    },
+    {
+      "store_pattern": "NEXT INSUR",
+      "purpose_id": 97864,
+      "purpose_name": "미국법인-보험비",
+      "confidence": 1.0,
+      "requirement_answer": "Worker's Comp"
+    },
+    {
+      "store_pattern": "T-MOBILE",
+      "purpose_id": 72341,
+      "purpose_name": "통신비",
+      "confidence": 1.0,
+      "requirement_answer": "T-Mobile 통신비"
+    },
+    {
+      "store_pattern": "AMAZON RETAIL",
+      "purpose_id": 94181,
+      "purpose_name": "미국법인-소모품비",
+      "confidence": 0.8,
+      "requirement_answer": "소모품"
+    },
+    {
+      "store_pattern": "AMAZON MARKETPLACE",
+      "purpose_id": 94181,
+      "purpose_name": "미국법인-소모품비",
+      "confidence": 0.8,
+      "requirement_answer": "소모품"
+    },
+    {
+      "store_pattern": "Amazon Retail Partners",
+      "purpose_id": 94181,
+      "purpose_name": "미국법인-소모품비",
+      "confidence": 0.8,
+      "requirement_answer": "소모품"
+    },
+    {
+      "store_pattern": "AMAZON PRIME",
+      "purpose_id": 70602,
+      "purpose_name": "멤버십 구독료",
+      "confidence": 1.0,
+      "requirement_answer": "Amazon Prime 구독"
+    },
+    {
+      "store_pattern": "WEWORK",
+      "purpose_id": 85714,
+      "purpose_name": "사무실임대료",
+      "confidence": 1.0,
+      "requirement_answer": null
+    },
+    {
+      "store_pattern": "카카오T일반택시",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "카카오T일반택시(법인)",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "타다(TADA)",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "티머니택시",
+      "purpose_id": 12551,
+      "purpose_name": "업무교통비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 이동"
+    },
+    {
+      "store_pattern": "해머스미스커피",
+      "purpose_id": 12535,
+      "purpose_name": "회의비",
+      "confidence": 0.9,
+      "requirement_answer": "업무 회의"
+    },
+    {
+      "store_pattern": "쿠팡이츠",
+      "purpose_id": 12556,
+      "purpose_name": "점심식비",
+      "confidence": 0.7,
+      "requirement_answer": null
     }
   ]
 }
