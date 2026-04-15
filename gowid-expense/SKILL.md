@@ -58,7 +58,11 @@ python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
 사용자가 "내 경비", "미제출", "경비 보여줘" 등 요청 시:
 
 ```bash
+# 기본: 이번 달 본인 경비
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py my-expenses
+
+# 지난달 / 특정 월 조회 — 사용자가 "3월 경비", "지난달 미제출" 등 요청 시
+python3 ~/.claude/skills/gowid-expense/scripts/gowid.py my-expenses --month 202603
 ```
 
 결과를 **한국어 테이블**로 표시:
@@ -73,8 +77,52 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py my-expenses
 
 - 금액이 USD/SGP 등 해외인 경우 원화 환산 금액도 함께 표시
 - 용도 추천은 auto_rules 기반 (헬퍼가 처리)
+- `--month` 미지정 시 이번 달만 반환 — "지난달 경비 안 보여요" 문의는 대부분 월 파라미터 누락
 
-### 2. 경비 제출
+### 2. 경비 자동 분류 추천 (suggest)
+
+사용자가 "이거 뭐로 제출해야 해?", "32625805 추천해줘", "규칙 추천" 등 요청 시:
+
+```bash
+python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
+```
+
+내부 동작:
+1. 경비 상세(`storeName`, `krwAmount`, `expenseTime`) 조회
+2. `data/auto_rules.json`의 324개 패턴과 매칭 (confidence 내림차순)
+3. **시간 기반 자동 전환**: 점심식비(12556) ↔ 야근식비(12555) — 18시 기준
+4. 한국 식당/배달 가맹점이면 규칙 미매칭 시에도 시간으로 점심/야근 추정
+5. 필수항목이 있으면 `requirementAnswerMap` 자동 채움 (auto_rules의 `requirement_answer` 활용)
+6. **바로 실행 가능한 `suggestedCommand` 문자열**까지 생성해서 반환
+
+출력 예:
+
+```json
+{
+  "storeName": "NOTION.SO",
+  "amount": 12500,
+  "matches": [
+    {"purposeName": "IT서비스 이용료", "purposeId": 12532, "confidence": 1.0, "memo": "Notion 워크스페이스"}
+  ],
+  "suggestedCommand": "gowid.py submit 32625805 12532 --memo 'Notion 워크스페이스'"
+}
+```
+
+사용자에게는 top 매칭 1건을 한국어로 요약해서 보여주고, 동의하면 `suggestedCommand`를 그대로 실행:
+
+```
+💡 NOTION.SO 12,500원 → IT서비스 이용료 (confidence 1.0)
+   메모: Notion 워크스페이스
+
+제출할까요? [y/N]
+```
+
+**언제 유용한가**:
+- 규칙이 있는 가맹점(Anthropic, GitHub, Vercel, AWS, Slack 등) → 즉시 Tier 1 자동 제출
+- 한국 식당 → 시간대 자동 판단 (점심/야근)
+- 필수항목 있는 용도(업무교통비, 도서구입비 등) → `requirement_answer`가 규칙에 있으면 자동 기입
+
+### 3. 경비 제출
 
 사용자가 "이거 식비로 제출해", "32625805 IT서비스로 제출" 등 요청 시:
 
@@ -91,31 +139,31 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py submit <expenseId> <purp
 **IT서비스 제출 시**:
 - 메모에 서비스명 자동 기입 (예: "Notion 워크스페이스")
 
-### 3. 용도 목록 조회
+### 4. 용도 목록 조회
 
 ```bash
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py purposes
 ```
 
-### 4. 팀원 목록 (참석자 선택용)
+### 5. 팀원 목록 (참석자 선택용)
 
 ```bash
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py members
 ```
 
-### 5. 경비 상세 조회
+### 6. 경비 상세 조회
 
 ```bash
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py detail <expenseId>
 ```
 
-### 6. 자동 분류 규칙 조회
+### 7. 자동 분류 규칙 조회
 
 ```bash
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py rules [검색어]
 ```
 
-### 7. 규칙 추가 제안
+### 8. 규칙 추가 제안
 
 사용자가 "이 가맹점 규칙 추가해줘" 요청 시:
 1. 가맹점 패턴, 용도, 메모를 확인
