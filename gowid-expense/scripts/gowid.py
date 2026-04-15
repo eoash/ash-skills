@@ -11,6 +11,7 @@ Commands:
                                   --all           → 전체 사용자 (관리자용)
   detail <id>                     경비 상세 조회
   submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]
+  suggest <id>                    auto_rules 기반 용도 자동 추천 + 제출 명령어 생성
   purposes                        용도 목록 (필수항목 상세 포함)
   purpose-requirements <purposeId>  특정 용도의 필수항목 상세 조회
   members                         팀원 목록 (참석자 선택용)
@@ -386,6 +387,121 @@ def cmd_rules(query: str = "") -> None:
     _out({"count": len(rules), "showing": len(result), "rules": result})
 
 
+def cmd_suggest(expense_id: str) -> None:
+    """경비 하나를 auto_rules로 자동 분류 추천."""
+    # 경비 상세 조회
+    resp = _api_get(f"/v2/expenses/{expense_id}")
+    e = resp["data"]
+    store = e.get("storeName") or ""
+    amount = e.get("krwAmount", 0)
+    time_str = e.get("expenseTime") or "120000"
+    hour = int(time_str[:2]) if time_str and time_str[:2].isdigit() else 12
+    status = e.get("approvalStatus", "")
+
+    # 규칙 로드
+    rules_file = Path(__file__).resolve().parent.parent / "data" / "auto_rules.json"
+    if not rules_file.exists():
+        _err("auto_rules.json not found")
+    with open(rules_file, encoding="utf-8") as f:
+        rules_data = json.load(f)
+
+    # 용도 ID → 필수항목 캐시 (first match 필요 시 조회)
+    purposes_resp = _api_get("/v2/purposes")
+    purpose_req_map = {}  # {purposeId: [{id, item}, ...]}
+    for p in purposes_resp["data"]:
+        purpose_req_map[p.get("purposeId")] = p.get("requirements", [])
+
+    # 매칭
+    matches = []
+    for r in rules_data.get("rules", []):
+        pattern = r.get("store_pattern", "")
+        if not pattern:
+            continue
+        if pattern.lower() in store.lower():
+            pid = r.get("purpose_id")
+            # 시간 기반 점심/야근 자동 전환 (12556 점심 ↔ 12555 야근)
+            if pid == 12556 and hour >= 18:
+                pid = 12555  # 야근식비
+            elif pid == 12555 and hour < 18:
+                pid = 12556  # 점심식비
+            requirements = purpose_req_map.get(pid, [])
+            req_answer_map = None
+            if requirements:
+                answer = r.get("requirement_answer") or ""
+                req_answer_map = {str(req["id"]): [answer] for req in requirements if req.get("isRequired")}
+            # 이름도 전환 반영
+            name_override = None
+            if pid == 12555:
+                name_override = "야근식비"
+            elif pid == 12556:
+                name_override = "점심식비"
+            matches.append({
+                "pattern": pattern,
+                "purposeId": pid,
+                "purposeName": name_override or r.get("purpose_name", ""),
+                "confidence": r.get("confidence", 0),
+                "memo": r.get("requirement_answer", ""),
+                "requirementAnswerMap": req_answer_map,
+                "requirements": [{"id": req["id"], "item": req["item"]} for req in requirements if req.get("isRequired")],
+            })
+
+    # 시간 기반 한국 식비 추천 (규칙에 없을 때 보조)
+    if not matches:
+        s = store.upper()
+        # 한국 음식점/배달 추정 (USD가 아니고 한글 포함)
+        is_korean_food = (
+            e.get("currency", "KRW") == "KRW"
+            and any(k in store for k in ["쿠팡이츠", "식당", "김밥", "국수", "삼계탕", "닭갈비", "양꼬치", "덮밥", "한식", "카페", "커피", "맥주"])
+        )
+        if is_korean_food:
+            if hour >= 18:
+                matches.append({
+                    "pattern": "(시간 기반 추정)",
+                    "purposeId": 12555,
+                    "purposeName": "야근식비",
+                    "confidence": 0.6,
+                    "memo": "야근식비",
+                    "requirementAnswerMap": None,
+                    "requirements": [],
+                })
+            else:
+                matches.append({
+                    "pattern": "(시간 기반 추정)",
+                    "purposeId": 12556,
+                    "purposeName": "점심식비",
+                    "confidence": 0.6,
+                    "memo": "점심식비",
+                    "requirementAnswerMap": None,
+                    "requirements": [],
+                })
+
+    # confidence 내림차순 정렬
+    matches.sort(key=lambda x: -x["confidence"])
+
+    # 제출 명령어 예시 생성
+    submit_cmd = ""
+    if matches:
+        top = matches[0]
+        parts = [f"gowid.py submit {expense_id} {top['purposeId']}"]
+        if top["memo"]:
+            parts.append(f"--memo '{top['memo']}'")
+        if top["requirementAnswerMap"]:
+            parts.append(f"--requirements '{json.dumps(top['requirementAnswerMap'], ensure_ascii=False)}'")
+        submit_cmd = " ".join(parts)
+
+    _out({
+        "expenseId": int(expense_id),
+        "storeName": store,
+        "amount": amount,
+        "currency": e.get("currency", "KRW"),
+        "date": e.get("expenseDate", ""),
+        "hour": hour,
+        "status": status,
+        "matches": matches[:5],
+        "suggestedCommand": submit_cmd,
+    })
+
+
 # ── Main ──────────────────────────────────────────────────
 
 # API 키 없이 실행 가능한 커맨드
@@ -481,6 +597,10 @@ def main() -> None:
             else:
                 i += 1
         cmd_submit(eid, pid, memo, participants, requirements, dry_run)
+    elif cmd == "suggest":
+        if len(args) < 2:
+            _err("Usage: gowid.py suggest <expenseId>")
+        cmd_suggest(args[1])
     elif cmd == "purposes":
         cmd_purposes()
     elif cmd == "purpose-requirements":
@@ -504,6 +624,7 @@ def main() -> None:
         print("  detail <id>              경비 상세 조회")
         print("  submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]")
         print("                           경비 제출 (필수항목 포함)")
+        print("  suggest <id>             auto_rules 기반 용도 자동 추천 + 제출 명령어 생성")
         print("  purposes                 용도 목록 (필수항목 상세 포함)")
         print("  purpose-requirements <purposeId>")
         print("                           특정 용도의 필수항목 상세 조회")
