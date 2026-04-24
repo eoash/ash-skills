@@ -394,8 +394,8 @@ def build_media_contract(
     add_page_break(doc)
     _add_internal_memo_page(doc, partner["name"], internal_memos, checklist)
 
-    # 저장
-    out = Path(output_path)
+    # 저장 — ~/ 시작 경로를 정상 확장 (Mac/Windows 호환)
+    out = Path(output_path).expanduser()
     out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(out)
     print(f"✓ saved: {out}  ({out.stat().st_size} bytes)")

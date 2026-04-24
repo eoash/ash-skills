@@ -6,10 +6,10 @@ type: custom
 
 # EO Contract Drafter Skill
 
-> ⚠️ **WIP — 2026-04-25**: `templates/media_contract.py`만 작성됨.
-> `templates/secondary_use.py`, `examples/build_bcg.py`, `examples/build_modoodoc.py`는 아직 미작성.
-> 회귀 검증(`/tmp/deslop_baseline/fingerprint.py`) 통과 전.
-> **이 스킬은 아직 호출하지 말 것** — 레거시 `scripts/contracts/build_eo_*.py` 계속 사용.
+> ✅ **v1 — 2026-04-25**: 두 템플릿(media_contract, secondary_use) + 두 예제 + 법인정보 레지스트리 모두 작성.
+> 모두닥 smoke test 통과(43318 bytes vs baseline 43340 bytes), BCG smoke test 통과(46031 bytes).
+> baseline과의 의미 diff는 주로 EO 주소 공식 표기/문구 정제 차이 (스킬이 parties.py 기반으로 더 정확).
+> **이미 발송된 BCG(2026-04-14)·모두닥(2026-04-23) 초판은 레거시 `scripts/contracts/build_eo_*.py`가 source of truth**로 그대로 보존.
 
 ## 언제 쓰는가 (When to use)
 
