@@ -37,8 +37,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_BASE = "https://openapi.gowid.com"
-_DEFAULT_KEY = "2a33cb19-f808-45a0-9e16-466a896e278a"
-API_KEY = os.environ.get("GOWID_API_KEY", _DEFAULT_KEY)
+API_KEY = os.environ.get("GOWID_API_KEY", "")
 
 
 def _out(obj: dict | list) -> None:
@@ -527,7 +526,7 @@ def cmd_setup() -> None:
     print()
 
     # Step 2: API Key
-    print(f"[OK] GOWID_API_KEY 설정됨 ({'환경변수' if os.environ.get('GOWID_API_KEY') else '내장 키'})")
+    print(f"[OK] GOWID_API_KEY: {'설정됨 (환경변수)' if os.environ.get('GOWID_API_KEY') else '미설정 — 환경변수 GOWID_API_KEY 필요'}")
     print()
 
     # Step 3: 연결 확인
@@ -555,7 +554,7 @@ def main() -> None:
     args = sys.argv[1:]
     cmd = args[0] if args else "help"
 
-    # API 키 사전 체크 (내장 키가 있으므로 일반적으로 도달하지 않음)
+    # API 키 사전 체크 (환경변수 GOWID_API_KEY 필수)
     if cmd not in _LOCAL_COMMANDS and not API_KEY:
         print("API 키 오류. python3 gowid.py setup 을 실행하세요.")
         sys.exit(1)
