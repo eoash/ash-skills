@@ -1,0 +1,16 @@
+# gitleaks config — secret-scanning gate (pre-commit + CI 공용)
+# 기본 룰셋 + EO 스택 전용 패턴(Anthropic/Vercel). gitleaks가 repo 루트에서 자동 로드.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "anthropic-api-key-eo"
+description = "Anthropic API key (sk-ant-)"
+regex = '''sk-ant-[a-zA-Z0-9_\-]{20,}'''
+keywords = ["sk-ant-"]
+
+[[rules]]
+id = "vercel-token-eo"
+description = "Vercel token (vcp_/vca_)"
+regex = '''v(cp|ca)_[A-Za-z0-9]{20,}'''
+keywords = ["vcp_", "vca_"]
