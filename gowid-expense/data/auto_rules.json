@@ -1,14 +1,14 @@
 {
   "version": "1.0",
   "description": "Auto-classification rules for Gowid expenses",
-  "rules_count": 324,
+  "rules_count": 331,
   "rules": [
     {
       "store_pattern": "자동결제_3",
       "purpose_id": 12532,
       "purpose_name": "IT서비스 이용료",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "TWILIO SENDGRID",
@@ -51,6 +51,55 @@
       "purpose_name": "IT서비스 이용료",
       "confidence": 1.0,
       "requirement_answer": "DeepL 번역"
+    },
+    {
+      "store_pattern": "DEEPL* SUB 778UHU4UOFS",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "DeepL 번역"
+    },
+    {
+      "store_pattern": "WISPR",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "WisprFlow"
+    },
+    {
+      "store_pattern": "LINDY",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Lindy AI"
+    },
+    {
+      "store_pattern": "PAYPAL *PADDLE.NET",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.9,
+      "requirement_answer": "Paddle.net SaaS 구독"
+    },
+    {
+      "store_pattern": "LinkedIn*",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.9,
+      "requirement_answer": "LinkedIn Premium"
+    },
+    {
+      "store_pattern": "OPENAI                 SAN FRANCISCO USA",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 0.95,
+      "requirement_answer": "OpenAI ChatGPT Credits"
+    },
+    {
+      "store_pattern": "구글클라우드코리아",
+      "purpose_id": 12532,
+      "purpose_name": "IT서비스 이용료",
+      "confidence": 1.0,
+      "requirement_answer": "Google Cloud"
     },
     {
       "store_pattern": "GEEKBOT LTD",
@@ -113,7 +162,7 @@
       "purpose_id": 12527,
       "purpose_name": "기타비용",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "X CORP. PAID FEATURES",
@@ -134,7 +183,7 @@
       "purpose_id": 12528,
       "purpose_name": "판촉물제작비",
       "confidence": 0.977,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "GITHUB, INC.",
@@ -169,7 +218,7 @@
       "purpose_id": 28453,
       "purpose_name": "주차비",
       "confidence": 1.0,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "BLACKMAGIC CLOUD",
@@ -204,7 +253,7 @@
       "purpose_id": 12537,
       "purpose_name": "도서구입비",
       "confidence": 1.0,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "GAMMA.APP",
@@ -218,7 +267,7 @@
       "purpose_id": 12532,
       "purpose_name": "IT서비스 이용료",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "LILYSAI, INC.",
@@ -400,7 +449,7 @@
       "purpose_id": 12532,
       "purpose_name": "IT서비스 이용료",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "이니시스_문화비_1",
@@ -820,7 +869,7 @@
       "purpose_id": 12532,
       "purpose_name": "IT서비스 이용료",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "D J*WSJ",
@@ -1450,7 +1499,7 @@
       "purpose_id": 12532,
       "purpose_name": "IT서비스 이용료",
       "confidence": 0.5,
-      "requirement_answer": null
+      "requirement_answer": "IT서비스 정기결제"
     },
     {
       "store_pattern": "LG U+ 통신요금 자동이체",

@@ -89,7 +89,7 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 
 내부 동작:
 1. 경비 상세(`storeName`, `krwAmount`, `expenseTime`) 조회
-2. `data/auto_rules.json`의 324개 패턴과 매칭 (confidence 내림차순)
+2. `data/auto_rules.json`의 331개 패턴과 매칭 (confidence 내림차순)
 3. **시간 기반 자동 전환**: 점심식비(12556) ↔ 야근식비(12555) — 18시 기준
 4. 한국 식당/배달 가맹점이면 규칙 미매칭 시에도 시간으로 점심/야근 추정
 5. 필수항목이 있으면 `requirementAnswerMap` 자동 채움 (auto_rules의 `requirement_answer` 활용)
@@ -102,9 +102,9 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
   "storeName": "NOTION.SO",
   "amount": 12500,
   "matches": [
-    {"purposeName": "IT서비스 이용료", "purposeId": 12532, "confidence": 1.0, "memo": "Notion 워크스페이스"}
+    {"purposeName": "IT서비스 이용료", "purposeId": 12532, "confidence": 1.0, "requirementAnswerMap": {"360": ["Notion 워크스페이스"]}}
   ],
-  "suggestedCommand": "gowid.py submit 32625805 12532 --memo 'Notion 워크스페이스'"
+  "suggestedCommand": "gowid.py submit 32625805 12532 --requirements '{\"360\": [\"Notion 워크스페이스\"]}'"
 }
 ```
 
@@ -112,7 +112,7 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 
 ```
 💡 NOTION.SO 12,500원 → IT서비스 이용료 (confidence 1.0)
-   메모: Notion 워크스페이스
+   서비스명: Notion 워크스페이스
 
 제출할까요? [y/N]
 ```
@@ -137,7 +137,8 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py submit <expenseId> <purp
 - 참석자 이름 → userId 변환은 `gowid.py members`로 조회
 
 **IT서비스 제출 시**:
-- 메모에 서비스명 자동 기입 (예: "Notion 워크스페이스")
+- `서비스,프로그램명 기입` 필드(`purposeRequirementAnswerMap["360"]`)에 서비스명 자동 기입 (예: "Notion 워크스페이스")
+- `--memo`로 서비스명을 받아도 헬퍼가 해당 필드로 자동 변환한다. 메모는 추가 설명이 있을 때만 사용
 
 ### 4. 용도 목록 조회
 
@@ -184,9 +185,9 @@ gh issue create --repo EO-Studio-Dev/gowid-expense-bot \
 | 131887 | 금요미식회(점심식비) | ✅ 가능 | 인당 15,000원 |
 | 12553 | 회식비 | ✅ 가능 | |
 | 12552 | 기타식비 | ✅ 가능 | |
-| 12532 | IT서비스 이용료 | ✅ 가능 | 메모에 서비스명 |
-| 70602 | 멤버십 구독료 | ✅ 가능 | 메모에 서비스명 |
-| 12536 | 매거진 구독료 | ✅ 가능 | 메모에 서비스명 |
+| 12532 | IT서비스 이용료 | ✅ 가능 | `서비스,프로그램명 기입`에 서비스명 |
+| 70602 | 멤버십 구독료 | ✅ 가능 | 서비스명/구독명을 필수항목에 기입 |
+| 12536 | 매거진 구독료 | ✅ 가능 | 매체명/구독명을 필수항목에 기입 |
 | 12546 | 우편비 | ✅ 가능 | |
 | 72341 | 통신비 | ✅ 가능 | |
 | 72017 | 노트북 대여(정기결제) | ✅ 가능 | |
@@ -217,8 +218,8 @@ python3 gowid.py submit <expenseId> 12551 --requirements '{"126": ["서울역에
 ```
 
 **자동 분류 규칙 활용:**
-- `rules` 커맨드의 `requirement_answer`(memo 필드) 값이 있으면 TEXT 타입 필수항목의 답으로 활용 가능
-- IT서비스(12532), 멤버십(70602), 매거진(12536)은 `isRequired: false`라 필수항목 없이 제출 가능
+- `rules` 커맨드의 `requirement_answer` 값이 있으면 TEXT 타입 필수항목의 답으로 활용 가능
+- IT서비스(12532), 멤버십(70602), 매거진(12536)은 `isRequired: false`여도 자동 제출 시 필수항목 답변을 채운다
 
 **필수항목 미입력 시**: 400 Bad Request 에러 반환 (이전에는 500이었으나 2026-04 수정됨)
 

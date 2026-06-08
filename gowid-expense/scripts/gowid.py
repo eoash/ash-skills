@@ -248,6 +248,19 @@ def cmd_submit(expense_id: str, purpose_id: str,
         except json.JSONDecodeError:
             _err("--requirements 값이 올바른 JSON이 아닙니다. 예: '{\"126\": [\"서울역\"]}'")
 
+    # Gowid 화면에서 IT서비스/구독류의 서비스명은 memo가 아니라
+    # purposeRequirementAnswerMap(예: "서비스,프로그램명 기입")에 저장된다.
+    if memo and req_map is None:
+        purposes_resp = _api_get("/v2/purposes?isActivated=true")
+        for p in purposes_resp["data"]:
+            if p.get("purposeId") != int(purpose_id):
+                continue
+            reqs = p.get("requirements") or []
+            if reqs:
+                req_map = {str(reqs[0]["id"]): [memo]}
+                memo = ""
+            break
+
     # 사전 확인
     detail = _api_get(f"/v1/expenses/{expense_id}")
     status = detail["data"].get("approvalStatus", "")
@@ -271,7 +284,7 @@ def cmd_submit(expense_id: str, purpose_id: str,
     body: dict = {"purposeId": int(purpose_id)}
     if participants:
         body["participantIdList"] = [int(p.strip()) for p in participants.split(",") if p.strip()]
-    if memo:
+    if memo and not req_map:
         body["memo"] = memo
     if req_map:
         body["purposeRequirementAnswerMap"] = req_map
@@ -425,9 +438,9 @@ def cmd_suggest(expense_id: str) -> None:
                 pid = 12556  # 점심식비
             requirements = purpose_req_map.get(pid, [])
             req_answer_map = None
-            if requirements:
-                answer = r.get("requirement_answer") or ""
-                req_answer_map = {str(req["id"]): [answer] for req in requirements if req.get("isRequired")}
+            answer = r.get("requirement_answer") or ""
+            if requirements and answer:
+                req_answer_map = {str(req["id"]): [answer] for req in requirements}
             # 이름도 전환 반영
             name_override = None
             if pid == 12555:
@@ -441,7 +454,7 @@ def cmd_suggest(expense_id: str) -> None:
                 "confidence": r.get("confidence", 0),
                 "memo": r.get("requirement_answer", ""),
                 "requirementAnswerMap": req_answer_map,
-                "requirements": [{"id": req["id"], "item": req["item"]} for req in requirements if req.get("isRequired")],
+                "requirements": [{"id": req["id"], "item": req["item"]} for req in requirements],
             })
 
     # 시간 기반 한국 식비 추천 (규칙에 없을 때 보조)
@@ -482,7 +495,7 @@ def cmd_suggest(expense_id: str) -> None:
     if matches:
         top = matches[0]
         parts = [f"gowid.py submit {expense_id} {top['purposeId']}"]
-        if top["memo"]:
+        if top["memo"] and not top["requirementAnswerMap"]:
             parts.append(f"--memo '{top['memo']}'")
         if top["requirementAnswerMap"]:
             parts.append(f"--requirements '{json.dumps(top['requirementAnswerMap'], ensure_ascii=False)}'")
