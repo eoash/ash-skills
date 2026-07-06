@@ -164,12 +164,14 @@ def cmd_my_expenses(month: str = "", show_all: bool = False) -> None:
         start_date = datetime.now().strftime("%Y%m") + "01"
         date_params = f"&startDate={start_date}"
 
-    # V2 API로 미제출 경비 조회 (cardUserName, memo, purpose, participants 포함)
+    # V2 지출내역 목록 조회 (cardUserName, memo, purpose, participants 포함).
+    # /v2/expense-statements 는 고위드 관리자 웹 목록과 동일한 기준으로,
+    # 기존 /v2/expenses 가 감추던 취소·환불 내역까지 반환한다(누락 미제출건도 더 잡힘).
     all_expenses: list[dict] = []
     page = 0
     max_pages = 50 if show_all else 20
     while page <= max_pages:
-        resp = _api_get(f"/v2/expenses?page={page}&size=50&sort=expenseDate,desc{date_params}")
+        resp = _api_get(f"/v2/expense-statements?page={page}&size=50&sort=expenseDate,desc{date_params}")
         content = resp["data"].get("content", [])
         if not content:
             break
@@ -178,10 +180,16 @@ def cmd_my_expenses(month: str = "", show_all: bool = False) -> None:
             break
         page += 1
 
-    # 필터: 미제출만, --all이 아니면 본인만
+    # 필터: 미제출만, --all이 아니면 본인만, 취소·환불(음수 금액) 제외
     my_expenses = []
+    cancelled_excluded = 0
     for e in all_expenses:
         if e.get("approvalStatus") != "NOT_SUBMITTED":
+            continue
+        # 취소·환불 내역은 음수 금액으로 표시되며 제출 대상이 아니므로 제외한다.
+        # (expense-statements 는 취소건까지 반환하므로 명시적 필터가 필요)
+        if (e.get("krwAmount") or 0) < 0 or (e.get("useAmount") or 0) < 0:
+            cancelled_excluded += 1
             continue
         if not show_all:
             card_user = e.get("cardUserName") or ""
@@ -205,7 +213,11 @@ def cmd_my_expenses(month: str = "", show_all: bool = False) -> None:
             "requirementAnswers": e.get("purposeRequirementAnswers", []),
         })
 
-    _out({"count": len(my_expenses), "expenses": my_expenses})
+    _out({
+        "count": len(my_expenses),
+        "cancelledExcluded": cancelled_excluded,
+        "expenses": my_expenses,
+    })
 
 
 def cmd_detail(expense_id: str) -> None:
