@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EO 릴스</title>
+<style>
+:root{--bg:#FCFBF5;--panel:#ffffff;--fg:#2A2B2B;--mute:#6f6f67;--line:#e4e2d8;--soft:#f3f1e6;--g0:#b3261e;--g1:#1d6f80;--g2:#2f7a50;--t:#6b6b63;--neon:#F9EE3A;--on-neon:#2A2B2B;--warn:#8a5a00}
+@media (prefers-color-scheme:dark){:root{--bg:#1f2020;--panel:#2A2B2B;--fg:#ecebe4;--mute:#a3a39a;--line:#3f4040;--soft:#35362f;--g0:#f0877f;--g1:#6EC6D2;--g2:#66B88A;--t:#a9a9a0;--warn:#f0c674}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;word-break:keep-all}
+button,select,textarea{font:inherit;color:inherit}
+.app{height:100%;display:grid;grid-template-columns:minmax(320px,1.15fr) minmax(300px,1fr) minmax(340px,400px);grid-template-rows:auto minmax(0,1fr);gap:1px;background:var(--line)}
+.app>.col:first-child{grid-row:1/3}
+.reelbar{grid-column:2/4;background:var(--bg);display:flex;align-items:center;gap:6px;padding:8px 12px;overflow-x:auto;min-height:49px}
+.tab{flex:none;max-width:230px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 11px;font-size:13px;line-height:1.45;cursor:pointer;display:flex;align-items:center;gap:6px}
+.tab span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab b{font-weight:700;flex:none}
+.tab[aria-selected=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tab i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mute)}
+.tab i.busy{animation:pulse 1.2s ease-in-out infinite}
+.tab i.unseen{background:var(--neon);box-shadow:0 0 0 1px var(--on-neon)}
+.tab[aria-selected=true] i{background:var(--bg)}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.tab i.busy{animation:none}}
+.tab:focus-visible,.small:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+.tabwrap{flex:none;display:flex;align-items:center;gap:4px}
+.small{border:0;background:none;border-radius:6px;padding:3px 7px;font-size:13px;line-height:1.45;cursor:pointer;color:var(--mute);white-space:nowrap}
+.small:hover{background:var(--soft);color:var(--fg)}
+.small.danger{color:var(--g0);font-weight:700}
+.ask{font-size:13px;color:var(--fg);white-space:nowrap;margin-left:4px}
+#addReel{flex:none;border:1px dashed var(--mute);background:none;border-radius:8px;padding:5px 11px;font-size:13px;line-height:1.45;cursor:pointer;white-space:nowrap}
+.col{background:var(--bg);min-width:0;min-height:0;display:flex;flex-direction:column}
+.head{flex:none;display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.head h1,.head h2{margin:0;font-size:15px;font-weight:700;line-height:1.35;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;max-width:100%}
+
+/* left: the whole transcript */
+#jump{flex:0 1 150px;min-width:0}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 48px}
+.hint{color:var(--mute);font-size:13px;line-height:1.55;margin:12px 0 0}
+.sec h3{font-size:15px;line-height:1.4;margin:28px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 6px;padding:6px 0}
+.time{color:var(--mute);font-size:12px;line-height:25px;font-variant-numeric:tabular-nums;text-decoration:none;user-select:none;-webkit-user-select:none}
+.time:hover{text-decoration:underline}
+.who{font-size:13px;font-weight:700;margin-bottom:1px;user-select:none;-webkit-user-select:none}
+.g0 .who{color:var(--g0)}.g1 .who{color:var(--g1)}.g2 .who{color:var(--g2)}.t .who{color:var(--t)}
+.row p{margin:0}
+.row.q .txt{background:var(--soft);border-radius:8px;padding:8px 12px}
+.empty{color:var(--mute);text-align:center;padding:64px 20px;line-height:1.7}
+
+/* middle: title and script */
+.field{display:flex;flex-direction:column;gap:6px;padding:14px 16px;min-height:0}
+.field label{font-size:13px;font-weight:700;color:var(--mute)}
+.field.grow{flex:1}
+.field+.field{padding-top:0}
+textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;line-height:1.65;resize:none;outline:none}
+textarea:focus{border-color:var(--fg)}
+textarea::placeholder{color:var(--mute)}
+#title{height:76px;font-size:17px;font-weight:700;line-height:1.4}
+#script{flex:1;min-height:0}
+
+/* right: render, video, chat */
+#state{flex:1;min-width:0;font-size:13px;line-height:1.4;color:var(--mute)}
+#state.warn{color:var(--warn)}
+.btn{border:0;border-radius:9px;padding:8px 16px;font-weight:700;cursor:pointer;background:var(--soft);white-space:nowrap;text-decoration:none;display:inline-block;font-size:14px;line-height:1.4;color:inherit}
+.btn.main{background:var(--neon);color:var(--on-neon)}
+.btn:hover:not(:disabled){filter:brightness(.96)}
+.btn:disabled,.btn.off{opacity:.45;cursor:default;pointer-events:none}
+.btn:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+.player{flex:1 1 58%;min-height:220px;background:#000;display:flex;align-items:center;justify-content:center;position:relative}
+.player video{width:100%;height:100%;display:block}
+.player p{color:#b9b9b0;font-size:14px;text-align:center;line-height:1.6;padding:0 32px;margin:0}
+.vbar{flex:none;display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+.vbar select{flex:1;min-width:0}
+.chat{flex:1 1 42%;min-height:180px;display:flex;flex-direction:column}
+#log{flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:92%;padding:7px 11px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55}
+.msg.claude{background:var(--soft);align-self:flex-start}
+.msg.user{background:var(--fg);color:var(--bg);align-self:flex-end}
+.tip{color:var(--mute);font-size:13px;line-height:1.6;margin:auto 0;text-align:center;padding:0 12px}
+.send{flex:none;display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);align-items:flex-end}
+#say{height:62px;flex:1;font-size:14px;padding:8px 10px}
+#down{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:10px;font-size:14px;z-index:9;display:none}
+@media (max-width:1000px){
+ html,body{height:auto;overflow:visible}
+ .app{display:block;height:auto}
+ .reelbar{border-bottom:1px solid var(--line)}
+ .col{border-bottom:1px solid var(--line)}
+ .scroll{max-height:60vh}
+ #script{height:40vh;flex:none}
+ .player{height:70vh;flex:none}
+ .chat{height:50vh;flex:none}
+}
+</style>
+</head>
+<body>
+<div id="down" role="alert"></div>
+<div class="app">
+  <section class="col" aria-label="전체 대본">
+    <div class="head"><h1 id="vtitle">전체 대본</h1><select id="jump" aria-label="소제목으로 이동" hidden></select></div>
+    <div class="scroll" id="transcript"><p class="empty" id="tempty">대본을 만드는 중이에요.<br>끝나면 여기에 나와요.</p></div>
+  </section>
+
+  <nav class="reelbar" aria-label="릴스"><div id="tabs" role="tablist" style="display:flex;gap:6px"></div><button id="addReel">+ 새 릴스</button></nav>
+
+  <section class="col" aria-label="릴스 대본">
+    <div class="field">
+      <label for="title">제목</label>
+      <textarea id="title" placeholder="릴스 위에 들어갈 제목을 적어 주세요. 두 줄이면 Enter로 나눠 주세요."></textarea>
+    </div>
+    <div class="field grow">
+      <label for="script">릴스 대본</label>
+      <textarea id="script" placeholder="왼쪽 대본에서 쓸 말을 복사해 붙여 넣고, 빼고 싶은 말을 지워 주세요. 30초 안쪽이 좋고, 40초를 넘기지 않게 해 주세요."></textarea>
+    </div>
+  </section>
+
+  <section class="col" aria-label="영상과 수정 요청">
+    <div class="head"><div id="state" role="status" aria-live="polite"></div><button class="btn main" id="render" disabled>렌더</button></div>
+    <div class="player"><p id="noVideo">제목과 대본을 넣고 렌더를 누르면<br>여기에 영상이 나와요.</p><video id="video" controls playsinline preload="metadata" hidden></video></div>
+    <div class="vbar"><select id="versions" aria-label="버전 선택" disabled><option>아직 영상이 없어요</option></select><a class="btn off" id="download" aria-disabled="true">다운로드</a></div>
+    <div class="chat">
+      <div id="log" aria-live="polite"><p class="tip" id="tip">영상을 보고 고칠 곳을 적어 주세요.<br>예: 12초의 "그런데" 빼줘, 마지막 문장 없애줘</p></div>
+      <div class="send"><textarea id="say" aria-label="수정 요청" placeholder="수정할 내용을 적어 주세요"></textarea><button class="btn" id="send" disabled>보내기</button></div>
+    </div>
+  </section>
+</div>
+<script>
+const T = new URLSearchParams(location.search).get("t") || "";
+const $ = id => document.getElementById(id);
+const titleEl = $("title"), scriptEl = $("script"), sayEl = $("say"), logEl = $("log"), videoEl = $("video"), versionsEl = $("versions");
+const TIP = '<p class="tip">영상을 보고 고칠 곳을 적어 주세요.<br>예: 12초의 "그런데" 빼줘, 마지막 문장 없애줘</p>';
+let reelId = null, rev = -1, dirty = false, saveTimer = null, stamp = 0, shownMessages = 0, versionKey = null, tabsKey = null, confirming = null, last = null, epoch = 0;
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {headers: {"X-Studio-Token": T}} : {
+    method: "POST", headers: {"X-Studio-Token": T, "Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error(path + " " + r.status);
+  return r.json();
+}
+
+function saveNow() {
+  clearTimeout(saveTimer); saveTimer = null;
+  if (!dirty) return Promise.resolve();
+  dirty = false;
+  return api("/api/draft", {reel: reelId, title: titleEl.value, script: scriptEl.value}).then(r => { rev = r.rev; }).catch(() => { dirty = true; });
+}
+function edited() {
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 500);
+  buttons();
+}
+titleEl.addEventListener("input", edited);
+scriptEl.addEventListener("input", edited);
+
+function buttons() {
+  const here = last && last.reels.find(x => x.id === reelId);
+  const busy = here && here.busy;
+  $("render").disabled = !last || busy || !titleEl.value.trim() || !scriptEl.value.trim();
+  $("render").textContent = busy ? "작업 중" : "렌더";
+  $("send").disabled = !last || !sayEl.value.trim();
+}
+
+async function ask(type, text) {
+  clearTimeout(saveTimer); saveTimer = null; dirty = false;
+  const r = await api("/api/request", {reel: reelId, type, text, title: titleEl.value, script: scriptEl.value, version: last && last.reel.selected});
+  rev = r.rev;
+  poll();
+}
+$("render").addEventListener("click", () => ask("render").catch(showDown));
+function send() {
+  const text = sayEl.value.trim();
+  if (!text || !last) return;
+  sayEl.value = "";
+  buttons();
+  ask("chat", text).catch(() => { sayEl.value = text; buttons(); showDown(); });
+}
+$("send").addEventListener("click", send);
+sayEl.addEventListener("input", buttons);
+sayEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }  // isComposing: Enter that ends a Hangul syllable must not send
+});
+
+// switching reels: save what was typed first, and ignore any answer that left the server before the switch
+async function change(action) {
+  await saveNow();
+  epoch++;
+  await action();
+  poll();
+}
+$("addReel").addEventListener("click", () => change(() => api("/api/reel/add", {})).then(() => titleEl.focus()).catch(showDown));
+versionsEl.addEventListener("change", () => change(() => api("/api/version", {reel: reelId, n: Number(versionsEl.value)})).catch(showDown));
+
+function isEmpty(r) { return !r.draft.title.trim() && !r.draft.script.trim() && !r.versions.length; }
+
+function smallButton(text, label, onClick, danger) {
+  const b = document.createElement("button");
+  b.className = "small" + (danger ? " danger" : "");
+  b.textContent = text;
+  if (label) b.setAttribute("aria-label", label);
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function removeReel(id) {
+  confirming = null;
+  change(() => api("/api/reel/delete", {reel: id})).catch(() => poll());
+}
+
+function drawTabs(s) {
+  if (confirming !== s.reel.id) confirming = null;
+  const key = JSON.stringify([s.reel.id, s.reels, confirming, isEmpty(s.reel)]);
+  if (key === tabsKey) return;  // rebuilding on every poll would drop a click that lands mid-rebuild
+  tabsKey = key;
+  const box = $("tabs");
+  box.textContent = "";
+  s.reels.forEach(x => {
+    const wrap = document.createElement("div"), b = document.createElement("button"), num = document.createElement("b"), t = document.createElement("span");
+    wrap.className = "tabwrap";
+    b.className = "tab"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(x.id === s.reel.id));
+    num.textContent = "릴스 " + x.id;
+    t.className = "t"; t.textContent = x.title;
+    b.append(num);
+    if (x.title) b.append(t);
+    if (x.busy || x.unseen) {
+      const dot = document.createElement("i");
+      dot.className = x.busy ? "busy" : "unseen";
+      dot.title = x.busy ? "작업 중" : "새 결과가 있어요";
+      b.append(dot);
+    }
+    b.title = x.title || "제목 없음";
+    b.addEventListener("click", () => { if (x.id !== reelId) change(() => api("/api/reel/show", {reel: x.id})).catch(showDown); });
+    wrap.append(b);
+    if (x.id === s.reel.id && !x.busy && !(s.reels.length === 1 && isEmpty(s.reel))) {
+      if (confirming === x.id) {
+        const q = document.createElement("span"), n = s.reel.versions.length;
+        q.className = "ask";
+        q.textContent = n ? `영상 ${n}개도 함께 지워져요. 되돌릴 수 없어요.` : "이 릴스를 지울까요?";
+        const cancel = smallButton("취소", "", () => { confirming = null; drawTabs(last); });
+        wrap.append(q, smallButton("지우기", `릴스 ${x.id} 지우기 확인`, () => removeReel(x.id), true), cancel);
+      } else {
+        wrap.append(smallButton("지우기", `릴스 ${x.id} 지우기`, () => {
+          if (isEmpty(s.reel)) return removeReel(x.id);  // nothing to lose, so no need to ask
+          confirming = x.id; drawTabs(last);
+        }));
+      }
+    }
+    box.appendChild(wrap);
+  });
+}
+
+function drawVersions(r) {
+  const key = r.id + ":" + r.versions.length + ":" + r.selected;
+  if (key === versionKey) return;
+  versionKey = key;
+  versionsEl.textContent = "";
+  [...r.versions].reverse().forEach(v => {
+    const o = document.createElement("option");
+    o.value = v.n;
+    o.textContent = `버전 ${v.n} · ${v.seconds}초 · ${when(v.at)} · ${v.title.split("\n")[0]}`;
+    versionsEl.appendChild(o);
+  });
+  const d = $("download"), n = r.selected;
+  versionsEl.disabled = !n;
+  $("noVideo").hidden = !!n;
+  videoEl.hidden = !n;
+  if (!n) {
+    versionsEl.innerHTML = "<option>아직 영상이 없어요</option>";
+    videoEl.pause(); videoEl.removeAttribute("src"); videoEl.load();
+    d.classList.add("off"); d.setAttribute("aria-disabled", "true"); d.removeAttribute("href");
+    return;
+  }
+  versionsEl.value = String(n);
+  const src = `/media/${r.id}/${n}?t=${encodeURIComponent(T)}`;
+  if (videoEl.getAttribute("src") !== src) { videoEl.setAttribute("src", src); videoEl.load(); }
+  d.href = `/download/${r.id}/${n}?t=${encodeURIComponent(T)}`;
+  d.classList.remove("off"); d.removeAttribute("aria-disabled");
+}
+
+function clock(sec) { return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+function when(ts) { return new Date(ts * 1000).toLocaleTimeString("ko-KR", {hour: "2-digit", minute: "2-digit"}); }
+
+function apply(s) {
+  last = s;
+  $("down").style.display = "none";
+  const r = s.reel;
+
+  if (r.id !== reelId) {  // another reel came on screen
+    reelId = r.id; rev = -1; dirty = false; shownMessages = 0;
+    logEl.innerHTML = TIP;
+  }
+  if (r.draft.rev > rev && !dirty) {
+    rev = r.draft.rev;
+    titleEl.value = r.draft.title;
+    scriptEl.value = r.draft.script;
+  }
+  for (; shownMessages < r.messages.length; shownMessages++) {
+    const m = r.messages[shownMessages], el = document.createElement("div");
+    el.className = "msg " + m.who;
+    el.textContent = m.text;
+    const tip = logEl.querySelector(".tip");
+    if (tip) tip.remove();
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  drawTabs(s);
+  drawVersions(r);
+
+  const st = $("state");
+  st.classList.remove("warn");
+  if (s.job_reel === r.id) {
+    st.textContent = (s.status || "작업 중이에요") + " · " + clock(s.working_for);
+    if (s.quiet_for > 1200) { st.textContent = "오래 걸리고 있어요. Claude Code 창을 확인해 주세요."; st.classList.add("warn"); }
+  } else if (s.queued_here) {
+    st.textContent = s.job_reel ? `릴스 ${s.job_reel} 작업이 끝나면 시작해요` : s.agent === "away" ? "요청을 받았어요. Claude가 연결되면 시작해요" : "요청을 받았어요";
+    if (s.agent === "away") st.classList.add("warn");
+  } else if (s.job_reel) {
+    st.textContent = `릴스 ${s.job_reel} 작업 중이에요 · ${clock(s.working_for)}`;
+  } else if (s.agent === "away") {
+    st.textContent = s.status || "Claude가 연결되어 있지 않아요. Claude Code 창에서 이어서 해달라고 말해 주세요.";
+    if (!s.status) st.classList.add("warn");
+  } else {
+    st.textContent = r.versions.length ? "수정할 곳을 채팅으로 알려 주세요" : "렌더 준비됐어요";
+  }
+  buttons();
+
+  if (s.transcript !== stamp) { stamp = s.transcript; loadTranscript(); }
+}
+
+async function loadTranscript() {
+  const doc = await api("/api/transcript");
+  if (!doc) return;
+  document.title = doc.title + " · EO 릴스";
+  $("vtitle").textContent = doc.title;
+  const box = $("transcript"), jump = $("jump");
+  box.textContent = "";
+  jump.textContent = "";
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = "쓸 말을 드래그해서 복사하고 가운데 대본 칸에 붙여 넣으세요. 시간을 누르면 유튜브에서 그 부분이 열려요. 자막이나 받아쓰기로 만든 대본이라 실제 말과 조금 다를 수 있어요.";
+  box.appendChild(hint);
+  doc.sections.forEach((sec, i) => {
+    const wrap = document.createElement("div"), h = document.createElement("h3");
+    wrap.className = "sec"; wrap.id = "s" + i;
+    h.textContent = sec.title;
+    wrap.appendChild(h);
+    let prev = null;
+    sec.rows.forEach(r => {
+      const row = document.createElement("div"), a = document.createElement("a"), txt = document.createElement("div"), p = document.createElement("p");
+      row.className = "row " + r.cls + (r.host ? " q" : "");
+      a.className = "time"; a.textContent = r.time; a.target = "_blank"; a.rel = "noopener"; a.draggable = false;
+      if (/^https:\/\//.test(r.link)) a.href = r.link;
+      txt.className = "txt";
+      if (r.who !== prev) { const w = document.createElement("div"); w.className = "who"; w.textContent = r.who; txt.appendChild(w); }
+      p.textContent = r.text;
+      txt.appendChild(p);
+      row.append(a, txt);
+      wrap.appendChild(row);
+      prev = r.who;
+    });
+    box.appendChild(wrap);
+    const o = document.createElement("option");
+    o.value = i; o.textContent = sec.time + " " + sec.title;
+    jump.appendChild(o);
+  });
+  jump.hidden = false;
+}
+$("jump").addEventListener("change", e => $("s" + e.target.value).scrollIntoView());
+
+function showDown() {
+  last = null;
+  buttons();
+  const d = $("down");
+  d.textContent = "작업 화면과 연결이 끊겼어요. Claude Code 창에서 다시 열어달라고 말해 주세요.";
+  d.style.display = "block";
+}
+async function poll() {
+  const at = epoch;
+  try {
+    const s = await api("/api/state");
+    if (at === epoch) apply(s);
+  } catch (e) { showDown(); }
+}
+window.addEventListener("beforeunload", () => { if (dirty) saveNow(); });
+poll();
+setInterval(poll, 1500);
+</script>
+</body>
+</html>
