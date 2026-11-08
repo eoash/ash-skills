@@ -10,7 +10,8 @@ Commands:
                                   --month 202603  → 2026년 3월 조회
                                   --all           → 전체 사용자 (관리자용)
   detail <id>                     경비 상세 조회
-  submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]
+  submit <id> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]
+  update <id> <purposeId> [같은 옵션]  이미 제출(SUBMITTED)된 건의 용도·필수항목·참석자 변경
   suggest <id>                    auto_rules 기반 용도 자동 추천 + 제출 명령어 생성
   purposes                        용도 목록 (필수항목 상세 포함)
   purpose-requirements <purposeId>  특정 용도의 필수항목 상세 조회
@@ -37,7 +38,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_BASE = "https://openapi.gowid.com"
-API_KEY = os.environ.get("GOWID_API_KEY", "")
+API_KEY = os.environ.get("GOWID_API_KEY", "").strip()
 
 
 def _out(obj: dict | list) -> None:
@@ -248,10 +249,24 @@ def cmd_detail(expense_id: str) -> None:
     })
 
 
+def _parse_external(external: str) -> list[dict]:
+    """'이름:회사,이름' → [{"name": 이름, "company": 회사}] (회사는 생략 가능)."""
+    users = []
+    for item in external.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        name, _, company = item.partition(":")
+        users.append({"name": name.strip(), "company": company.strip()})
+    return users
+
+
 def cmd_submit(expense_id: str, purpose_id: str,
                memo: str = "", participants: str = "",
                requirements: str = "",
-               dry_run: bool = False) -> None:
+               dry_run: bool = False,
+               external: str = "",
+               allow_submitted: bool = False) -> None:
     # 필수항목 파싱
     req_map: dict | None = None
     if requirements:
@@ -273,11 +288,14 @@ def cmd_submit(expense_id: str, purpose_id: str,
                 memo = ""
             break
 
-    # 사전 확인
+    # 사전 확인 — submit은 미제출만, update는 제출 대기(SUBMITTED)까지만 변경한다.
+    # 승인 이후 상태(APPROVED 등)는 API 변경을 검증하지 않았으므로 건드리지 않는다.
     detail = _api_get(f"/v1/expenses/{expense_id}")
     status = detail["data"].get("approvalStatus", "")
-    if status != "NOT_SUBMITTED":
-        _out({"error": f"Already {status}", "expenseId": int(expense_id)})
+    allowed = {"NOT_SUBMITTED", "SUBMITTED"} if allow_submitted else {"NOT_SUBMITTED"}
+    if status not in allowed:
+        hint = "" if allow_submitted or status != "SUBMITTED" else " — 변경하려면 update 커맨드를 쓰세요"
+        _out({"error": f"Already {status}{hint}", "expenseId": int(expense_id)})
         return
 
     if dry_run:
@@ -287,6 +305,7 @@ def cmd_submit(expense_id: str, purpose_id: str,
             "purposeId": int(purpose_id),
             "memo": memo,
             "participants": participants,
+            "external": _parse_external(external),
             "requirements": req_map,
             "status": "would_submit",
         })
@@ -296,14 +315,30 @@ def cmd_submit(expense_id: str, purpose_id: str,
     body: dict = {"purposeId": int(purpose_id)}
     if participants:
         body["participantIdList"] = [int(p.strip()) for p in participants.split(",") if p.strip()]
-    if memo and not req_map:
+    if external:
+        body["externalUserList"] = _parse_external(external)
+    if memo:
         body["memo"] = memo
     if req_map:
         body["purposeRequirementAnswerMap"] = req_map
 
     # V2 API 사용 — V1은 purposeRequirementAnswerMap 처리 시 400 반환
     _api_put(f"/v2/expenses/{expense_id}", body)
-    _out({"success": True, "expenseId": int(expense_id), "purposeId": int(purpose_id), "memo": memo})
+
+    # 저장 결과 재조회 — 응답 200만으로 반영을 단정하지 않는다.
+    saved = _api_get(f"/v2/expenses/{expense_id}")["data"]
+    _out({
+        "success": True,
+        "expenseId": int(expense_id),
+        "purposeId": int(purpose_id),
+        "previousStatus": status,
+        "status": saved.get("approvalStatus"),
+        "purpose": (saved.get("purpose") or {}).get("name"),
+        "memo": saved.get("memo"),
+        "requirementAnswers": saved.get("purposeRequirementAnswers", []),
+        "participants": [u.get("userName") for u in saved.get("participants") or []],
+        "external": saved.get("expenseExternalUsers") or [],
+    })
 
 
 def cmd_purposes() -> None:
@@ -603,11 +638,11 @@ def main() -> None:
         if len(args) < 2:
             _err("Usage: gowid.py detail <expenseId>")
         cmd_detail(args[1])
-    elif cmd == "submit":
+    elif cmd in ("submit", "update"):
         if len(args) < 3:
-            _err("Usage: gowid.py submit <expenseId> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]")
+            _err(f"Usage: gowid.py {cmd} <expenseId> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]")
         eid, pid = args[1], args[2]
-        memo, participants, requirements, dry_run = "", "", "", False
+        memo, participants, requirements, dry_run, external = "", "", "", False, ""
         i = 3
         while i < len(args):
             if args[i] == "--memo" and i + 1 < len(args):
@@ -616,11 +651,14 @@ def main() -> None:
                 participants = args[i + 1]; i += 2
             elif args[i] == "--requirements" and i + 1 < len(args):
                 requirements = args[i + 1]; i += 2
+            elif args[i] == "--external" and i + 1 < len(args):
+                external = args[i + 1]; i += 2
             elif args[i] == "--dry-run":
                 dry_run = True; i += 1
             else:
                 i += 1
-        cmd_submit(eid, pid, memo, participants, requirements, dry_run)
+        cmd_submit(eid, pid, memo, participants, requirements, dry_run,
+                   external=external, allow_submitted=(cmd == "update"))
     elif cmd == "suggest":
         if len(args) < 2:
             _err("Usage: gowid.py suggest <expenseId>")
@@ -646,8 +684,10 @@ def main() -> None:
         print("                           --month 202603  → 특정 월 조회")
         print("                           --all           → 전체 사용자 (관리자용)")
         print("  detail <id>              경비 상세 조회")
-        print("  submit <id> <purposeId> [--memo M] [--participants P] [--requirements JSON] [--dry-run]")
-        print("                           경비 제출 (필수항목 포함)")
+        print("  submit <id> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]")
+        print("                           경비 제출 (필수항목 포함). --external '이름:회사,이름' 외부 참석자")
+        print("  update <id> <purposeId> [submit과 같은 옵션]")
+        print("                           이미 제출(SUBMITTED)된 건의 용도·필수항목·참석자 변경")
         print("  suggest <id>             auto_rules 기반 용도 자동 추천 + 제출 명령어 생성")
         print("  purposes                 용도 목록 (필수항목 상세 포함)")
         print("  purpose-requirements <purposeId>")
