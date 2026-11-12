@@ -33,6 +33,12 @@ API 키는 스크립트에 내장되어 있지 않다. 환경변수 `GOWID_API_K
 - `API 키 오류` / `401 API 키가 만료되었거나 잘못되었습니다` → 키 미설정 또는 회전된 옛 키. 로컬 `.env` 사본은 옛 키일 수 있으니 맥미니 고위드 봇(`com.eo.gowid-bot`)이 쓰는 현행 키를 운영팀에 받는다
 - 권장 저장: `~/.gowid-api-key`(chmod 600) + `.zshrc`에 `[ -f ~/.gowid-api-key ] && export GOWID_API_KEY="$(cat ~/.gowid-api-key)"`. 키를 채팅·명령줄에 붙여넣지 않는다
 
+## 금액 검증
+
+- 원화 한도는 `krwAmount`로 비교한다. 해당 값이 없으면 KRW 거래에 한해서 `useAmount`를 사용하고, 외화 금액을 원화로 간주하지 않는다.
+- 외화 거래의 원화 금액이 미확정이면 추천에 확인 필요를 표시한다. 한도가 있는 용도에 참석자 없이 제출하려는 경우도 원화 금액 확인 전까지 차단한다.
+- 가맹점명에 가승인 표시가 있는 건은 제출·수정하지 않는다.
+
 ## 사용자 식별과 보안 한계
 
 ```bash
@@ -137,7 +143,7 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py submit <expenseId> <purposeId> [--memo "메모"] [--participants "id1,id2"] [--dry-run]
 ```
 
-제출 전에 헬퍼가 확인하는 것: 본인 경비, 활성 용도, 필수항목 id가 그 용도에 있는지, 필수 답이 모두 있는지, 자리표시 답이 아닌지, 참석자가 재직자인지, 원천 기록상 취소/0원 이하가 아닌지. 하나라도 어긋나면 서버에 쓰지 않고 멈춘다.
+제출 전에 헬퍼가 확인하는 것: 본인 경비, 활성 용도, 필수항목 id가 그 용도에 있는지, 필수 답이 모두 있는지, 자리표시 답이 아닌지, 참석자가 재직자인지, 원천 기록상 취소/0원 이하 또는 가승인이 아닌지. 하나라도 어긋나면 서버에 쓰지 않고 멈춘다.
 
 **식비 제출 시**:
 - 결제 금액이 용도의 `limitAmount`(Gowid 설정값)를 넘는데 참석자가 없으면 차단한다. "누구랑 먹었어요?"라고 묻고 `--participants`/`--external`을 넣는다. 본인 단독이 맞으면 `--confirm-solo`를 붙인다
