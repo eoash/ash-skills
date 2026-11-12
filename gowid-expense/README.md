@@ -7,10 +7,10 @@ Gowid 법인카드 경비를 Claude Code / Codex에서 자연어로 조회·제�
 ## 설치
 
 ```bash
-# Claude Code
-npx skills add EO-Studio-Dev/gowid-expense-skill --skill gowid-expense --agent claude-code -y
+# Claude Code (원본: eoash/ash-skills)
+npx skills add eoash/ash-skills --skill gowid-expense -g -a claude-code
 
-# Codex는 설치 후 ~/.codex/skills/gowid-expense 에 연결되도록 배치
+# Codex를 쓰는 경우에만 ~/.codex/skills/gowid-expense 에 연결되도록 배치
 ```
 
 API 키는 내장되어 있지 않습니다. 환경변수 `GOWID_API_KEY`가 필요합니다(운영팀에 현행 키 요청). 권장: `~/.gowid-api-key`(chmod 600)에 저장하고 `.zshrc`에서 `export GOWID_API_KEY="$(cat ~/.gowid-api-key)"`.
@@ -36,7 +36,7 @@ Claude Code 또는 Codex에서 자연어로 요청하면 됩니다.
 **식비 제출 (참석자 필요)**
 ```
 "3번 점심식비로 제출해, 김찬희랑 먹었어"    → 참석자 자동 매칭
-"야근식비로 제출해"                        → 19시 이후 결제분
+"야근식비로 제출해"                        → 점심/야근은 사용자가 지정 (시각 기준 미확정)
 "금요미식회로 제출 — 팀 전체"              → 인당 15,000원 한도
 ```
 
@@ -61,15 +61,21 @@ Claude Code 또는 Codex에서 자연어로 요청하면 됩니다.
 
 ## 작동 방식
 
-1. `git config user.email`로 본인 식별 (Gowid 계정과 자동 매칭)
-2. Gowid API에서 본인 카드의 미제출 경비만 조회
-3. 341개 자동 분류 규칙으로 용도 추천
+1. `GOWID_EMAIL` 또는 `git config user.email`로 본인 식별 (재직 상태·이메일 1명 일치만 인정)
+2. 해당 월 지출내역을 끝까지 읽고, 경비 상세의 소유자 userId가 본인인 미제출 건만 표시
+3. 341개 자동 분류 규칙으로 용도 추천 (긴 패턴 우선, 자리표시 답은 자동 기입하지 않음)
 4. Claude가 대화형으로 제출 처리 (메모, 참석자 등)
-5. `submit`은 이미 제출된 건을 건너뜀 (중복 방지). 승인 전 변경은 `update`
+5. 제출 후 재조회로 상태·용도·필수항목·참석자·메모를 검사. 이미 제출된 건은 건너뜀. 승인 전 변경은 `update`(생략한 필드는 기존 값 유지)
+
+가승인·원천 취소/환불 건은 제출하지 않습니다. 원화 한도 검증에는 실제 원화 금액만 사용하며, 외화 금액을 원화로 대입하지 않습니다.
+
+### 보안 한계
+
+API 키는 회사 공용이다. 위 본인 검사는 이 헬퍼 안에서의 실수 방지일 뿐 인증이 아니다. 키를 가진 사람은 다른 사람 이메일을 설정하거나 API를 직접 호출해 다른 사람 경비를 다룰 수 있다. 진짜 본인 제한에는 서버측 인증 중계(Slack/SSO 신원 → 중계가 소유자 검사 후 Gowid 호출)나 사용자별 자격증명이 필요하다.
 
 ## 지원 기능
 
-- **경비 조회**: 본인 카드의 미제출 내역
+- **경비 조회**: 본인 카드의 미제출 내역 (전체 사용자 조회 `--all`은 제거됨)
 - **경비 제출**: 용도 지정 + 필수항목/메모 + 내부·외부 참석자
 - **제출 건 수정**: 승인 전(SUBMITTED) 용도·필수항목·참석자 변경 (`update`)
 - **상세 조회**: 카드번호, 승인일, 금액, 현재 상태
@@ -85,7 +91,7 @@ Claude Code 또는 Codex에서 자연어로 요청하면 됩니다.
 | 용도 | 한도 | 필요 정보 |
 |------|------|-----------|
 | 점심식비 | 인당 12,000원 | 초과 시 참석자 필수 |
-| 야근식비 | 인당 12,000원 | 19시 이후 사용분 |
+| 야근식비 | 인당 12,000원 | 초과 시 참석자 필수 (점심/야근 시각 기준은 확인 중) |
 | 금요미식회 | 인당 15,000원 | 금요일 점심, 참석자 필수 |
 | 회식비 | 없음 | 참석자 필수 |
 
@@ -142,7 +148,9 @@ gowid-expense/
 ├── scripts/
 │   └── gowid.py          # Gowid API 헬퍼 (Python, 외부 패키지 불필요)
 ├── data/
-│   └── auto_rules.json   # 자동 분류 규칙 (331개)
+│   └── auto_rules.json   # 자동 분류 규칙 (341개)
+├── tests/
+│   └── test_gowid.py     # 로컬 mock 서버 회귀 테스트 (실제 API·키 불필요)
 ├── README.md
 └── LICENSE               # Proprietary (EO Studio)
 ```
