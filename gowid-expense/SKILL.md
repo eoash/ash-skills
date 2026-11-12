@@ -19,14 +19,13 @@ Gowid 법인카드 미제출 경비를 조회하고, 용도를 지정하여 제�
 스킬 실행 시 **반드시 먼저** 아래를 확인:
 
 ```bash
-# Codex 설치 경로
-python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
-
 # Claude Code 설치 경로
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
 
+# Codex에 설치한 경우 (설치돼 있을 때만)
+python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
+
 # Windows 사용자는 python3 대신 python 사용
-python ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
 ```
 
 API 키는 스크립트에 내장되어 있지 않다. 환경변수 `GOWID_API_KEY`가 필요하다.
@@ -34,16 +33,16 @@ API 키는 스크립트에 내장되어 있지 않다. 환경변수 `GOWID_API_K
 - `API 키 오류` / `401 API 키가 만료되었거나 잘못되었습니다` → 키 미설정 또는 회전된 옛 키. 로컬 `.env` 사본은 옛 키일 수 있으니 맥미니 고위드 봇(`com.eo.gowid-bot`)이 쓰는 현행 키를 운영팀에 받는다
 - 권장 저장: `~/.gowid-api-key`(chmod 600) + `.zshrc`에 `[ -f ~/.gowid-api-key ] && export GOWID_API_KEY="$(cat ~/.gowid-api-key)"`. 키를 채팅·명령줄에 붙여넣지 않는다
 
-## 사용자 식별
+## 사용자 식별과 보안 한계
 
 ```bash
-# git 이메일로 Gowid userId 조회
-python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
-# Claude Code: python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
-# Windows: python ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
+python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
 ```
 
-`whoami` 결과에서 `userId`를 이후 모든 요청의 사용자 식별자로 사용.
+- 본인 이메일은 `GOWID_EMAIL`(있으면 우선) 또는 `git config user.email`에서 읽고, Gowid 멤버 목록에서 **재직(NORMAL) 상태이고 이메일이 정확히 한 명과 일치**할 때만 본인으로 인정한다.
+- `detail`·`suggest`·`submit`·`update`는 경비 상세의 소유자 userId가 본인 userId와 같을 때만 진행한다. 소유자를 확인할 수 없으면 차단한다. `my-expenses`도 이름이 아니라 상세의 소유자 ID로 최종 확인한다.
+- 전체 사용자 조회(`--all`)는 제거했다.
+- **이것은 인증이 아니다.** API 키는 회사 공용이고, 이메일 설정은 로컬에서 바꿀 수 있다. 이 헬퍼를 정상 사용하는 사람이 실수로 남의 경비를 다루는 것은 막지만, 키를 가진 사람이 다른 사람 이메일을 설정하거나 API를 직접 호출하는 것은 막지 못한다. 진짜 본인 제한에는 서버측 인증 중계나 사용자별 자격증명이 필요하다.
 
 ## 헬퍼 스크립트
 
@@ -64,9 +63,13 @@ python3 ~/.codex/skills/gowid-expense/scripts/gowid.py whoami
 # 기본: 이번 달 본인 경비
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py my-expenses
 
-# 지난달 / 특정 월 조회 — 사용자가 "3월 경비", "지난달 미제출" 등 요청 시
+# 지난달 / 특정 월 조회 — 사용자가 "3월 경비", "지난달 미제출" 등 요청 시 (YYYYMM 또는 YYYY-MM)
 python3 ~/.claude/skills/gowid-expense/scripts/gowid.py my-expenses --month 202603
 ```
+
+- 해당 월(1일~말일)의 모든 페이지를 끝까지 읽는다. 안전 상한에 걸리면 잘린 결과를 내지 않고 오류로 멈춘다.
+- 취소·환불은 **원천 레코드 자체의 값으로만** 제외한다: 음수/0원 행, `isRefund=true` 행, 상세 순액이 0원 이하가 된 건. 같은 가맹점·같은 금액의 ± 행을 짝지어 지우는 추정은 하지 않는다.
+- `excluded`에 제외 사유별 건수가 나온다. 카드 사용자명이 비어 있는 미제출 건은 본인 여부를 확정할 수 없어 표시하지 않고 건수만 알린다.
 
 결과를 **한국어 테이블**로 표시:
 
@@ -91,12 +94,12 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 ```
 
 내부 동작:
-1. 경비 상세(`storeName`, `krwAmount`, `expenseTime`) 조회
-2. `data/auto_rules.json`의 331개 패턴과 매칭 (confidence 내림차순)
-3. **시간 기반 자동 전환**: 점심식비(12556) ↔ 야근식비(12555) — 18시 기준
-4. 한국 식당/배달 가맹점이면 규칙 미매칭 시에도 시간으로 점심/야근 추정
-5. 필수항목이 있으면 `requirementAnswerMap` 자동 채움 (auto_rules의 `requirement_answer` 활용)
-6. **바로 실행 가능한 `suggestedCommand` 문자열**까지 생성해서 반환
+1. 본인 경비인지 확인한 뒤 상세(`storeName`, `krwAmount`, `expenseTime`) 조회
+2. `data/auto_rules.json`의 341개 패턴과 매칭. **가장 긴 패턴 우선**, 같으면 confidence 순. 4자 이하 영숫자 패턴(예: `SR`)은 단어 경계가 있어야 매칭
+3. 비활성 용도로 가는 규칙은 `inactivePurposeMatches`로 따로 보여주고 추천하지 않는다
+4. **식비(점심/야근)는 시각으로 자동 결정하지 않는다.** 회사 기준 시각이 확인되지 않았다(스킬 18시, 봇 17시, 옛 README 19시로 서로 달랐음). `mealCandidates`를 보여주고 사용자에게 고르게 한다
+5. 필수항목이 1개이고 규칙 답이 실제 값일 때만 자동으로 채운다. 자리표시 답(`업무 이동`, `출장`, `IT서비스 정기결제`, `식비`, `소모품`)이나 필수항목이 여러 개인 용도는 `needsInput`으로 넘긴다
+6. 막히는 이유가 없을 때만 `suggestedCommand`(셸 인용 처리됨)와 `suggestedArgv`를 준다. 이유는 `blockers`에 나온다
 
 출력 예:
 
@@ -111,7 +114,7 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 }
 ```
 
-사용자에게는 top 매칭 1건을 한국어로 요약해서 보여주고, 동의하면 `suggestedCommand`를 그대로 실행:
+사용자에게는 top 매칭 1건을 한국어로 요약해서 보여주고, `blockers`가 비어 있고 사용자가 동의하면 `suggestedCommand`를 실행한다. `blockers`가 있으면 그 내용을 사용자에게 묻는다:
 
 ```
 💡 NOTION.SO 12,500원 → IT서비스 이용료 (confidence 1.0)
@@ -121,23 +124,25 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py suggest <expenseId>
 ```
 
 **언제 유용한가**:
-- 규칙이 있는 가맹점(Anthropic, GitHub, Vercel, AWS, Slack 등) → 즉시 Tier 1 자동 제출
-- 한국 식당 → 시간대 자동 판단 (점심/야근)
-- 필수항목 있는 용도(업무교통비, 도서구입비 등) → `requirement_answer`가 규칙에 있으면 자동 기입
+- 규칙이 있는 가맹점(Anthropic, GitHub, Vercel, AWS, Slack 등) → 용도·서비스명 추천
+- 한국 식당 → 점심/야근 후보만 제시 (사용자가 선택)
+- 필수항목 있는 용도(업무교통비, 도서구입비 등) → 실제 값을 사용자에게 묻는다
 
 ### 3. 경비 제출
 
 사용자가 "이거 식비로 제출해", "32625805 IT서비스로 제출" 등 요청 시:
 
 ```bash
-# 용도 지정 + 제출
-python3 ~/.claude/skills/gowid-expense/scripts/gowid.py submit <expenseId> <purposeId> [--memo "메모"] [--participants "id1,id2"]
+# 용도 지정 + 제출 (먼저 --dry-run으로 보낼 내용 확인)
+python3 ~/.claude/skills/gowid-expense/scripts/gowid.py submit <expenseId> <purposeId> [--memo "메모"] [--participants "id1,id2"] [--dry-run]
 ```
 
+제출 전에 헬퍼가 확인하는 것: 본인 경비, 활성 용도, 필수항목 id가 그 용도에 있는지, 필수 답이 모두 있는지, 자리표시 답이 아닌지, 참석자가 재직자인지, 원천 기록상 취소/0원 이하가 아닌지. 하나라도 어긋나면 서버에 쓰지 않고 멈춘다.
+
 **식비 제출 시**:
-- 인당 한도 초과(점심 12,000원, 야근 12,000원, 금요미식회 15,000원)면 참석자 필수
-- "누구랑 먹었어요?" 물어보기
-- 참석자 이름 → userId 변환은 `gowid.py members`로 조회
+- 결제 금액이 용도의 `limitAmount`(Gowid 설정값)를 넘는데 참석자가 없으면 차단한다. "누구랑 먹었어요?"라고 묻고 `--participants`/`--external`을 넣는다. 본인 단독이 맞으면 `--confirm-solo`를 붙인다
+- 인당 금액 계산 방식(결제자를 인원에 넣는지)은 회사 정책 확인 전이라 헬퍼가 판정하지 않는다
+- 참석자 이름 → userId 변환은 `gowid.py members`로 조회 (재직자만 나온다)
 
 **접대비 제출 시 (외부 참석자)**:
 - 내부 참석자는 `--participants "userId,userId"`, 외부 참석자는 `--external "이름:소속,이름"`(소속 생략 가능)
@@ -150,7 +155,7 @@ python3 gowid.py submit <expenseId> 12547 --participants "2196,2911" \
 
 **IT서비스 제출 시**:
 - `서비스,프로그램명 기입` 필드(`purposeRequirementAnswerMap["360"]`)에 서비스명 자동 기입 (예: "Notion 워크스페이스")
-- `--memo`로 서비스명을 받아도 헬퍼가 해당 필드로 자동 변환한다. 메모는 추가 설명이 있을 때만 사용
+- IT서비스·멤버십·매거진(12532/70602/12536)에서만, 서비스명 칸이 비어 있으면 `--memo` 값을 그 칸으로 옮긴다. 다른 용도에서는 메모를 메모로 그대로 둔다
 
 ### 3-1. 이미 제출된 건 수정 (update)
 
@@ -162,8 +167,9 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py update <expenseId> <purp
 
 - `submit`은 미제출(NOT_SUBMITTED)만 처리하고 SUBMITTED는 건너뛴다 → 변경은 `update`로
 - `update`는 NOT_SUBMITTED·SUBMITTED만 허용. APPROVED 등 승인 이후 상태는 API 변경을 검증하지 않았으므로 Gowid 웹 안내
-- PUT은 지정한 값으로 덮어쓴다. 용도를 바꾸면 그 용도의 필수항목을 `--requirements`로 다시 넣고, 참석자가 있던 건은 `--participants`/`--external`도 다시 넣는다
-- submit/update 모두 저장 후 재조회 결과(status·purpose·requirementAnswers·participants)를 출력한다. 응답 200만으로 완료 보고하지 말고 이 값을 확인
+- 지정하지 않은 메모·참석자·외부 참석자는 기존 값을 다시 보내 유지한다. 용도가 같으면 기존 필수항목 답도 유지한다. 지우려면 `--clear-memo`, `--clear-participants`, `--clear-external`을 명시한다
+- 용도를 바꾸면 새 용도의 필수항목을 `--requirements`로 넣어야 한다 (비어 있으면 차단)
+- submit/update 모두 저장 후 다시 조회해 status=SUBMITTED, 용도, 메모, 필수항목, 내부·외부 참석자가 요청과 같은지 검사한다. 하나라도 다르면 `success:false`, `postconditionFailures`, 종료코드 2로 끝난다. 쓰기 요청이 오류를 내도 재조회로 실제 반영 여부를 판정하며, 같은 요청을 자동으로 다시 보내지 않는다
 - 제출 취소(미제출로 되돌리기) API는 없다 → Gowid 웹
 
 ### 4. 용도 목록 조회
@@ -230,9 +236,9 @@ gh issue create --repo EO-Studio-Dev/gowid-expense-bot \
 | 12541 | 보험비 | ✅ 가능 | 필수 `사무실보험,화재보험등`(3118). 서울보증 보증보험료는 서류발급비로 처리(운영 기준) |
 | 12527 | 기타비용 | ✅ 가능 | 필수 `왜 기타항목인지`(835) |
 | 94176 | 미국법인-지급수수료 | ✅ 가능 | 필수 `어떤 항목인지`(2161) |
-
-필수항목 id는 바뀔 수 있으니 제출 전 `purposes`로 확인한다.
 | 12530 | 온라인 마케팅 | ✅ 가능 | 프로젝트 필요 |
+
+필수항목 id·한도는 바뀔 수 있으니 제출 전 `purposes`로 확인한다.
 
 ## 필수항목(Requirements) 있는 용도 제출
 
@@ -262,10 +268,10 @@ python3 gowid.py submit <expenseId> 12551 --requirements '{"126": ["서울역에
 
 ## 주의사항
 
-- 이 스킬은 **본인 경비만** 조회/제출합니다
+- 이 헬퍼는 **본인 경비만** 다루도록 로컬에서 검사한다(위 "보안 한계" 참고: 인증은 아님)
 - API 키는 회사 공용입니다. 외부에 절대 공유하지 마세요
 - 제출 후 Gowid에서 관리자 승인을 기다리면 됩니다
-- `submit`은 이미 제출된 건을 자동으로 건너뜁니다 (중복 제출 방지). 변경은 `update`
+- `submit`은 제출 직전 상태를 확인해 이미 제출된 건을 건너뜁니다(`skipped`). 동시에 두 번 실행하는 경합까지 서버가 막아 주지는 않으므로 같은 건을 병렬로 제출하지 않는다. 변경은 `update`
 - 필수항목 있는 용도도 `--requirements`로 API 제출 가능. 필수항목 값은 사실만 넣고, 모르면 사용자에게 묻는다 (`auto_rules`의 `IT서비스 정기결제` 같은 자리표시 답을 다른 용도에 쓰지 않는다)
 
 ## 가맹점이 불분명할 때
@@ -273,4 +279,12 @@ python3 gowid.py submit <expenseId> 12551 --requirements '{"126": ["서울역에
 - `인터넷결제_KPN_N`, `이노페이(비)_…`, `자동결제_N`, `정기과금_N` 은 PG(결제대행) 표기라 실제 상점을 알 수 없다. 사용자에게 롯데카드 카카오톡 알림 캡처를 받아 같은 금액·승인시각(`일시불, MM/DD HH:MM`)으로 실제 상점을 찾는다. 긴 캡처는 macOS Vision OCR(Swift `VNRecognizeTextRequest`, ko-KR)로 세로 타일링해 읽으면 된다
 - `(주)고위드 - 자동결제` 는 고위드 노트북 대여료(매월 5일 정기, 노트북 대여 72017)가 기본. 금액이 평소와 다르면 반납 추가비용·매입 등 사유를 묻는다
 - 서울보증보험 결제는 사이트(sgic.co.kr 법인 로그인 → 조회 → 보험계약 조회 → 기간별 현황)에서 금액으로 계약을 찾아 사업명을 필수항목에 적는다
-- 과거 같은 가맹점 처리 이력은 `/v2/expense-statements?startDate=&endDate=`를 월별로 훑어 `purpose`를 보면 된다
+- 과거 같은 가맹점 처리 이력은 `my-expenses --month`로 본인 건을 월별로 확인한다
+
+## 테스트
+
+외부 네트워크·실제 키 없이 로컬 mock 서버로만 돈다:
+
+```bash
+python3 -m unittest discover -s gowid-expense/tests -v
+```

@@ -1,33 +1,47 @@
 #!/usr/bin/env python3
-"""gowid.py — Gowid API helper for Claude Code skill.
+"""gowid.py — Gowid API helper for Claude Code / Codex skill.
 
 Usage: python3 gowid.py <command> [args]
 
 Commands:
-  whoami                          현재 사용자 확인 (git email → Gowid user)
-  my-expenses [--month YYYYMM] [--all]
-                                  미제출 경비 조회 (기본: 이번 달, 본인)
-                                  --month 202603  → 2026년 3월 조회
-                                  --all           → 전체 사용자 (관리자용)
-  detail <id>                     경비 상세 조회
-  submit <id> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]
-  update <id> <purposeId> [같은 옵션]  이미 제출(SUBMITTED)된 건의 용도·필수항목·참석자 변경
-  suggest <id>                    auto_rules 기반 용도 자동 추천 + 제출 명령어 생성
-  purposes                        용도 목록 (필수항목 상세 포함)
-  purpose-requirements <purposeId>  특정 용도의 필수항목 상세 조회
-  members                         팀원 목록 (참석자 선택용)
+  setup                           첫 실행 셋업 가이드
+  whoami                          현재 사용자 확인 (GOWID_EMAIL 또는 git email → Gowid 재직 사용자)
+  my-expenses [--month YYYYMM]    본인 미제출 경비 조회 (기본: 이번 달, 전체 페이지)
+  detail <id>                     본인 경비 상세 조회
+  submit <id> <purposeId> [옵션]  본인 미제출 경비 제출
+  update <id> <purposeId> [옵션]  본인 SUBMITTED 건 변경 (지정하지 않은 필드는 기존 값 유지)
+  suggest <id>                    auto_rules 기반 용도 추천 (본인 경비만)
+  purposes                        활성 용도 목록 (필수항목 포함)
+  purpose-requirements <purposeId>
+  members                         재직 팀원 목록 (참석자 선택용)
   rules [query]                   자동 분류 규칙 조회
 
-Requires: GOWID_API_KEY environment variable.
-No external dependencies — stdlib only (urllib, json, subprocess).
+submit/update 옵션:
+  --memo M                 메모 (IT서비스·멤버십·매거진은 서비스명 칸이 비어 있으면 그 칸으로 이동)
+  --participants "id,id"   내부 참석자 userId
+  --external "이름:소속,이름"  외부 참석자
+  --requirements JSON      필수항목 {"<요구항목id>": ["답"]}
+  --clear-memo / --clear-participants / --clear-external   기존 값을 명시적으로 지움
+  --confirm-solo           한도 초과 식비를 참석자 없이 본인 단독으로 제출함을 확인
+  --dry-run                서버에 쓰지 않고 보낼 내용과 검사 결과만 출력
+
+보안 한계: 이 헬퍼가 쓰는 Gowid API 키는 회사 공용 키다. 본인 확인(이메일→userId)과
+소유자 검사는 로컬 CLI의 안전장치일 뿐 인증이 아니다. 키를 가진 사람은 이 스크립트를
+거치지 않고 API를 직접 호출할 수 있다. 진짜 본인 제한은 서버측 중계나 사용자별 자격증명이 필요하다.
+
+Requires: GOWID_API_KEY environment variable. stdlib only.
 """
 from __future__ import annotations
 
+import calendar
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -37,17 +51,43 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-API_BASE = "https://openapi.gowid.com"
+_DEFAULT_API_BASE = "https://openapi.gowid.com"
 API_KEY = os.environ.get("GOWID_API_KEY", "").strip()
+
+PAGE_SIZE = 100            # /v2/expense-statements 최대 size
+MAX_PAGES = 1000           # 안전 상한. 도달하면 조용히 자르지 않고 오류로 중단
+SERVICE_NAME_PURPOSES = {12532, 70602, 12536}   # IT서비스, 멤버십, 매거진: 서비스명 칸
+MEAL_PURPOSES = {12556, 12555}                  # 점심/야근 — 시각 기준은 회사 정책 미확정
+# auto_rules에 있는 자리표시 답. 사실 값이 아니므로 필수항목 답으로 쓰지 않는다.
+PLACEHOLDER_ANSWERS = {"IT서비스 정기결제", "업무 이동", "출장", "식비", "소모품"}
+_FOREIGN_ENTITY_PREFIXES = ("US-", "미국법인")
+
+
+def _api_base() -> str:
+    """테스트용 GOWID_API_BASE는 로컬 주소만 허용한다(공용 키를 외부로 보내지 않기 위해)."""
+    override = os.environ.get("GOWID_API_BASE", "").strip()
+    if not override:
+        return _DEFAULT_API_BASE
+    host = urllib.parse.urlparse(override).hostname or ""
+    if host not in ("127.0.0.1", "localhost"):
+        _err("GOWID_API_BASE는 테스트용 로컬 주소(127.0.0.1/localhost)만 허용됩니다.")
+    return override.rstrip("/")
+
+
+def _timeout() -> float:
+    try:
+        return float(os.environ.get("GOWID_HTTP_TIMEOUT", "30"))
+    except ValueError:
+        return 30.0
 
 
 def _out(obj: dict | list) -> None:
     print(json.dumps(obj, ensure_ascii=False, indent=2))
 
 
-def _err(msg: str) -> None:
-    _out({"error": msg})
-    sys.exit(1)
+def _err(msg: str, code: int = 1, **extra) -> None:
+    _out({"error": msg, **extra})
+    sys.exit(code)
 
 
 _HTTP_MESSAGES = {
@@ -60,190 +100,318 @@ _HTTP_MESSAGES = {
 }
 
 
-def _api_get(path: str) -> dict:
-    req = urllib.request.Request(
-        f"{API_BASE}{path}",
-        headers={"Authorization": API_KEY},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        msg = _HTTP_MESSAGES.get(e.code, f"HTTP {e.code} 오류")
-        _err(f"{msg} (GET {path})")
-    except urllib.error.URLError as e:
-        _err(f"네트워크 연결 실패: {e.reason}. 인터넷/VPN 연결을 확인하세요.")
+class ApiError(Exception):
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
-def _api_put(path: str, body: dict) -> dict | None:
-    data = json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{API_BASE}{path}",
-        data=data,
-        headers={
-            "Authorization": API_KEY,
-            "Content-Type": "application/json",
-        },
-        method="PUT",
-    )
+def _request(method: str, path: str, body: dict | None = None):
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    headers = {"Authorization": API_KEY}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(f"{_api_base()}{path}", data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=_timeout()) as resp:
             raw = resp.read().decode("utf-8")
-            return json.loads(raw) if raw.strip() else None
     except urllib.error.HTTPError as e:
         msg = _HTTP_MESSAGES.get(e.code, f"HTTP {e.code} 오류")
-        _err(f"{msg} (PUT {path})")
-    except urllib.error.URLError as e:
-        _err(f"네트워크 연결 실패: {e.reason}. 인터넷/VPN 연결을 확인하세요.")
+        raise ApiError(f"{msg} ({method} {path})", e.code)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        reason = getattr(e, "reason", e)
+        raise ApiError(f"네트워크 연결 실패/시간 초과: {reason} ({method} {path})")
+    if not raw.strip():
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise ApiError(f"응답이 JSON이 아닙니다 ({method} {path})")
 
 
-def _git_email() -> str:
-    # GOWID_EMAIL 환경변수 우선 (git email과 Gowid 등록 이메일이 다를 때)
+def _api_get(path: str) -> dict:
+    try:
+        resp = _request("GET", path)
+    except ApiError as e:
+        _err(str(e))
+    if not isinstance(resp, dict) or "data" not in resp or resp["data"] is None:
+        _err(f"응답에 data가 없습니다 (GET {path})")
+    return resp
+
+
+def _data(path: str):
+    return _api_get(path)["data"]
+
+
+def _git_email() -> tuple[str, str]:
+    """(email, source). GOWID_EMAIL이 우선한다 — 편의 설정일 뿐 인증이 아니다."""
     env_email = os.environ.get("GOWID_EMAIL", "").strip()
     if env_email:
-        return env_email
+        return env_email, "GOWID_EMAIL"
     try:
-        result = subprocess.run(
-            ["git", "config", "user.email"],
-            capture_output=True, text=True, timeout=5,
-        )
-        return result.stdout.strip()
+        result = subprocess.run(["git", "config", "user.email"],
+                                capture_output=True, text=True, timeout=5)
+        return result.stdout.strip(), "git config user.email"
     except Exception:
-        return ""
+        return "", ""
+
+
+def _int_arg(value: str, label: str) -> int:
+    try:
+        n = int(str(value).strip())
+    except (TypeError, ValueError):
+        _err(f"{label}는 숫자여야 합니다: {value!r}")
+    if n <= 0:
+        _err(f"{label}는 양수여야 합니다: {value!r}")
+    return n
+
+
+# ── 본인 식별 / 소유자 검사 ──────────────────────────────
+
+
+def _resolve_me() -> dict:
+    email, source = _git_email()
+    if not email:
+        _err("본인 이메일을 알 수 없습니다. git config user.email 또는 GOWID_EMAIL을 설정하세요.")
+    members = _data("/v1/members")
+    matches = [m for m in members if (m.get("email") or "").strip().lower() == email.lower()]
+    if not matches:
+        _err(f"{email} 에 매칭되는 Gowid 사용자가 없습니다. 등록 이메일을 확인하세요.")
+    if len(matches) > 1:
+        _err(f"{email} 에 매칭되는 Gowid 사용자가 여러 명이라 본인을 확정할 수 없습니다.")
+    me = matches[0]
+    if me.get("status") != "NORMAL":
+        _err("재직(NORMAL) 상태가 아닌 Gowid 계정입니다. 이 헬퍼로 조회/제출할 수 없습니다.",
+             status=me.get("status"))
+    if me.get("userId") is None:
+        _err("Gowid 사용자 ID를 확인할 수 없습니다.")
+    me = dict(me)
+    me["_identitySource"] = source
+    return me
+
+
+def _owner_of(detail: dict) -> tuple[str, object] | None:
+    card = detail.get("card") or {}
+    candidates = [detail.get("user") or {}, card.get("cardUser") or {}]
+    for u in candidates:
+        if u.get("userId") is not None:
+            return "userId", int(u["userId"])
+    for u in candidates:
+        if u.get("email"):
+            return "email", str(u["email"]).strip().lower()
+    return None
+
+
+def _is_owner(detail: dict, me: dict) -> bool:
+    owner = _owner_of(detail)
+    if owner is None:
+        return False
+    kind, value = owner
+    if kind == "userId":
+        return value == int(me["userId"])
+    return value == (me.get("email") or "").strip().lower()
+
+
+def _owned_detail(expense_id: int, me: dict) -> dict:
+    detail = _data(f"/v2/expenses/{expense_id}")
+    if _owner_of(detail) is None:
+        _err("경비 소유자를 확인할 수 없어 차단했습니다.", expenseId=expense_id)
+    if not _is_owner(detail, me):
+        _err("본인 경비가 아닙니다. 이 헬퍼는 본인 카드 경비만 다룹니다.", expenseId=expense_id)
+    return detail
+
+
+# ── 취소/금액 (원천 필드 기준, 다른 거래와 금액 상쇄 추론은 하지 않음) ──
+
+
+def _num(v) -> float | None:
+    try:
+        return float(v) if v is not None and v != "" else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _source_void_state(row: dict) -> str | None:
+    """원천 레코드 자체의 필드만 본다. 다른 거래와의 ± 짝짓기는 절대 하지 않는다."""
+    if row.get("isRefund") is True:
+        return "refund"
+    for key in ("krwAmount", "useAmount"):
+        v = _num(row.get(key))
+        if v is not None and v <= 0:
+            return "voided"
+    if "가승인" in (row.get("storeName") or ""):
+        return "preauthorized"
+    return None
+
+
+def _amount_krw(row: dict) -> float:
+    krw = _num(row.get("krwAmount"))
+    if krw is not None:
+        return krw
+    return _num(row.get("useAmount")) or 0.0
+
+
+# ── 월/페이지 ─────────────────────────────────────────────
+
+
+def _month_range(month: str) -> tuple[str, str, str]:
+    if month:
+        m = re.fullmatch(r"(\d{4})-?(0[1-9]|1[0-2])", month.strip())
+        if not m:
+            _err(f"--month 형식이 잘못되었습니다: {month!r} (예: 202603 또는 2026-03)")
+        y, mo = int(m.group(1)), int(m.group(2))
+    else:
+        now = datetime.now()
+        y, mo = now.year, now.month
+    last_day = calendar.monthrange(y, mo)[1]
+    ym = f"{y}{mo:02d}"
+    # /v2/expense-statements startDate/endDate는 양끝 포함으로 문서화되어 있다(eo-portal gowid.ts).
+    # 서버 해석이 달라도 결과가 섞이지 않도록 expenseDate로 한 번 더 거른다.
+    return ym, f"{ym}01", f"{ym}{last_day:02d}"
+
+
+def _fetch_all_statements(start: str, end: str) -> list[dict]:
+    rows: list[dict] = []
+    page = 0
+    while True:
+        if page >= MAX_PAGES:
+            _err(f"페이지 안전 상한({MAX_PAGES})에 도달했습니다. 결과가 잘렸을 수 있어 중단합니다.")
+        data = _data(f"/v2/expense-statements?page={page}&size={PAGE_SIZE}"
+                     f"&sort=expenseDate,desc&startDate={start}&endDate={end}")
+        content = data.get("content") or []
+        rows.extend(content)
+        total_pages = data.get("totalPages")
+        if data.get("last") is True:
+            break
+        if isinstance(total_pages, int) and page + 1 >= total_pages:
+            break
+        if not content:
+            break
+        page += 1
+    return rows
 
 
 # ── Commands ──────────────────────────────────────────────
 
 
 def cmd_whoami() -> None:
-    email = _git_email()
-    if not email:
-        _err("git config user.email not set")
-
-    resp = _api_get("/v1/members")
-    for m in resp["data"]:
-        if m.get("email", "").lower() == email.lower():
-            _out({
-                "userId": m["userId"],
-                "userName": m["userName"],
-                "email": m["email"],
-                "department": (m.get("department") or {}).get("name", ""),
-            })
-            return
-    _err(f"{email} 에 매칭되는 Gowid 사용자가 없습니다. git email과 Gowid 등록 이메일이 같은지 확인하세요.")
+    me = _resolve_me()
+    _out({
+        "userId": me["userId"],
+        "userName": me.get("userName", ""),
+        "email": me.get("email", ""),
+        "department": (me.get("department") or {}).get("name", ""),
+        "identitySource": me["_identitySource"],
+        "note": "로컬 이메일 기반 식별이며 인증이 아닙니다. 공용 API 키 자체는 본인 제한을 강제하지 않습니다.",
+    })
 
 
-def cmd_my_expenses(month: str = "", show_all: bool = False) -> None:
-    email = _git_email()
-    if not email:
-        _err("git config user.email not set")
+def cmd_my_expenses(month: str = "") -> None:
+    me = _resolve_me()
+    ym, start, end = _month_range(month)
+    rows = _fetch_all_statements(start, end)
 
-    # 사용자 이름 조회
-    members_resp = _api_get("/v1/members")
-    user_name = ""
-    for m in members_resp["data"]:
-        if m.get("email", "").lower() == email.lower():
-            user_name = m["userName"]
-            break
-    if not user_name:
-        _err(f"Gowid에서 {email} 사용자를 찾을 수 없습니다. git email과 Gowid 등록 이메일이 같은지 확인하세요.")
-
-    # 날짜 범위 계산
-    if month:
-        # --month YYYYMM → 해당 월 전체
-        ym = month.replace("-", "")[:6]
-        start_date = ym + "01"
-        # 월말 계산
-        y, m_int = int(ym[:4]), int(ym[4:6])
-        if m_int == 12:
-            end_date = f"{y + 1}0101"
-        else:
-            end_date = f"{y}{m_int + 1:02d}01"
-        date_params = f"&startDate={start_date}&endDate={end_date}"
-    else:
-        # 기본: 이번 달
-        start_date = datetime.now().strftime("%Y%m") + "01"
-        date_params = f"&startDate={start_date}"
-
-    # V2 지출내역 목록 조회 (cardUserName, memo, purpose, participants 포함).
-    # /v2/expense-statements 는 고위드 관리자 웹 목록과 동일한 기준으로,
-    # 기존 /v2/expenses 가 감추던 취소·환불 내역까지 반환한다(누락 미제출건도 더 잡힘).
-    all_expenses: list[dict] = []
-    page = 0
-    max_pages = 50 if show_all else 20
-    while page <= max_pages:
-        resp = _api_get(f"/v2/expense-statements?page={page}&size=50&sort=expenseDate,desc{date_params}")
-        content = resp["data"].get("content", [])
-        if not content:
-            break
-        all_expenses.extend(content)
-        if resp["data"].get("last", True):
-            break
-        page += 1
-
-    # 필터: 미제출만, --all이 아니면 본인만, 취소·환불(음수 금액) 제외
-    my_expenses = []
-    cancelled_excluded = 0
-    for e in all_expenses:
-        if e.get("approvalStatus") != "NOT_SUBMITTED":
+    out_of_range = 0
+    void_rows = 0
+    unnamed_card_rows = 0
+    candidates = []
+    for r in rows:
+        if str(r.get("expenseDate") or "")[:6] != ym:
+            out_of_range += 1
             continue
-        # 취소·환불 내역은 음수 금액으로 표시되며 제출 대상이 아니므로 제외한다.
-        # (expense-statements 는 취소건까지 반환하므로 명시적 필터가 필요)
-        if (e.get("krwAmount") or 0) < 0 or (e.get("useAmount") or 0) < 0:
-            cancelled_excluded += 1
+        if r.get("approvalStatus") != "NOT_SUBMITTED":
             continue
-        if not show_all:
-            card_user = e.get("cardUserName") or ""
-            if card_user != user_name:
-                continue
-        purpose = e.get("purpose") or {}
-        my_expenses.append({
-            "expenseId": e.get("expenseId"),
-            "storeName": e.get("storeName", ""),
-            "storeAddress": e.get("storeAddress", ""),
-            "useAmount": e.get("useAmount", 0),
-            "krwAmount": e.get("krwAmount", 0),
-            "currency": e.get("currency", "KRW"),
-            "expenseDate": e.get("expenseDate", ""),
-            "expenseTime": e.get("expenseTime", ""),
-            "cardNumber": e.get("shortCardNumber") or "",
-            "cardUserName": e.get("cardUserName") or "",
+        if _source_void_state(r):
+            void_rows += 1
+            continue
+        card_user = r.get("cardUserName") or ""
+        if not card_user:
+            unnamed_card_rows += 1
+            continue
+        if card_user != me.get("userName"):
+            continue
+        candidates.append(r)
+
+    # 이름 일치는 1차 후보일 뿐 — 상세의 소유자 ID로 확정하고 원천 순액을 다시 본다.
+    expenses = []
+    owner_mismatch = 0
+    void_by_detail = 0
+    stale = 0
+    for r in candidates:
+        d = _data(f"/v2/expenses/{r.get('expenseId')}")
+        if not _is_owner(d, me):
+            owner_mismatch += 1
+            continue
+        if d.get("approvalStatus") != "NOT_SUBMITTED":
+            stale += 1
+            continue
+        state = _source_void_state(d)
+        if state:
+            void_by_detail += 1
+            continue
+        purpose = d.get("purpose") or r.get("purpose") or {}
+        expenses.append({
+            "expenseId": r.get("expenseId"),
+            "storeName": d.get("storeName") or r.get("storeName", ""),
+            "storeAddress": d.get("storeAddress") or r.get("storeAddress", ""),
+            "useAmount": d.get("useAmount", r.get("useAmount", 0)),
+            "krwAmount": d.get("krwAmount", r.get("krwAmount", 0)),
+            "statementKrwAmount": r.get("krwAmount", 0),
+            "amountChangedAtSource": _num(d.get("krwAmount")) != _num(r.get("krwAmount")),
+            "currency": d.get("currency") or r.get("currency", "KRW"),
+            "expenseDate": r.get("expenseDate", ""),
+            "expenseTime": r.get("expenseTime", ""),
+            "cardNumber": r.get("shortCardNumber") or "",
             "purpose": purpose.get("name", ""),
-            "memo": e.get("memo") or "",
-            "participantCount": e.get("participantCount", 0),
-            "requirementAnswers": e.get("purposeRequirementAnswers", []),
+            "memo": d.get("memo") or r.get("memo") or "",
+            "participantCount": r.get("participantCount", 0),
+            "requirementAnswers": d.get("purposeRequirementAnswers", r.get("purposeRequirementAnswers", [])),
         })
 
     _out({
-        "count": len(my_expenses),
-        "cancelledExcluded": cancelled_excluded,
-        "expenses": my_expenses,
+        "month": ym,
+        "count": len(expenses),
+        "pagesComplete": True,
+        "statementRows": len(rows),
+        "excluded": {
+            "sourceVoidOrRefundRows": void_rows,
+            "voidByDetail": void_by_detail,
+            "ownerMismatchSameName": owner_mismatch,
+            "statusChangedSinceList": stale,
+            "outOfMonthRows": out_of_range,
+            "unnamedCardRows": unnamed_card_rows,
+        },
+        "notes": ([f"카드 사용자명이 비어 있는 미제출 {unnamed_card_rows}건은 본인 여부를 확정할 수 없어 표시하지 않았습니다. Gowid 웹에서 카드 별칭을 확인하세요."]
+                  if unnamed_card_rows else []),
+        "expenses": expenses,
     })
 
 
 def cmd_detail(expense_id: str) -> None:
-    resp = _api_get(f"/v2/expenses/{expense_id}")
-    d = resp["data"]
+    eid = _int_arg(expense_id, "expenseId")
+    me = _resolve_me()
+    d = _owned_detail(eid, me)
     card = d.get("card") or {}
-    card_user = card.get("cardUser") or {}
-    user = d.get("user") or card_user
+    user = d.get("user") or card.get("cardUser") or {}
     card_num = card.get("cardNumber", "") or ""
     _out({
         "expenseId": d.get("expenseId"),
         "storeName": d.get("storeName", ""),
         "storeAddress": d.get("storeAddress", ""),
         "useAmount": d.get("useAmount", 0),
+        "krwAmount": d.get("krwAmount", 0),
         "currency": d.get("currency", "KRW"),
         "expenseDate": d.get("expenseDate", ""),
         "expenseTime": d.get("expenseTime", ""),
         "approvalStatus": d.get("approvalStatus", ""),
+        "sourceState": _source_void_state(d),
         "purpose": d.get("purpose") or {},
         "memo": d.get("memo", ""),
         "cardNumber": card_num[-4:] if card_num else "",
         "cardAlias": card.get("alias", ""),
         "userName": user.get("userName", ""),
-        "userEmail": user.get("email", ""),
         "participants": d.get("participants", []),
+        "external": d.get("expenseExternalUsers") or [],
         "requirementAnswers": d.get("purposeRequirementAnswers", []),
         "comments": d.get("comments", []),
     })
@@ -257,80 +425,234 @@ def _parse_external(external: str) -> list[dict]:
         if not item:
             continue
         name, _, company = item.partition(":")
+        if not name.strip():
+            _err(f"--external 항목에 이름이 없습니다: {item!r}")
         users.append({"name": name.strip(), "company": company.strip()})
     return users
 
 
-def cmd_submit(expense_id: str, purpose_id: str,
-               memo: str = "", participants: str = "",
-               requirements: str = "",
-               dry_run: bool = False,
-               external: str = "",
-               allow_submitted: bool = False) -> None:
-    # 필수항목 파싱
-    req_map: dict | None = None
-    if requirements:
-        try:
-            req_map = json.loads(requirements)
-        except json.JSONDecodeError:
-            _err("--requirements 값이 올바른 JSON이 아닙니다. 예: '{\"126\": [\"서울역\"]}'")
+def _parse_requirements(raw: str) -> dict[str, list[str]]:
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        _err("--requirements 값이 올바른 JSON이 아닙니다. 예: '{\"126\": [\"서울역\"]}'")
+    if not isinstance(parsed, dict):
+        _err("--requirements는 {\"요구항목id\": [\"답\"]} 형태여야 합니다.")
+    out: dict[str, list[str]] = {}
+    for k, v in parsed.items():
+        key = str(_int_arg(k, "필수항목 id"))
+        if isinstance(v, str):
+            v = [v]
+        if not isinstance(v, list) or not v or not all(isinstance(x, str) and x.strip() for x in v):
+            _err(f"필수항목 {key}의 답은 비어 있지 않은 문자열 목록이어야 합니다.")
+        out[key] = [x.strip() for x in v]
+    return out
 
-    # Gowid 화면에서 IT서비스/구독류의 서비스명은 memo가 아니라
-    # purposeRequirementAnswerMap(예: "서비스,프로그램명 기입")에 저장된다.
-    if memo and req_map is None:
-        purposes_resp = _api_get("/v2/purposes?isActivated=true")
-        for p in purposes_resp["data"]:
-            if p.get("purposeId") != int(purpose_id):
-                continue
-            reqs = p.get("requirements") or []
-            if reqs:
-                req_map = {str(reqs[0]["id"]): [memo]}
-                memo = ""
-            break
 
-    # 사전 확인 — submit은 미제출만, update는 제출 대기(SUBMITTED)까지만 변경한다.
-    # 승인 이후 상태(APPROVED 등)는 API 변경을 검증하지 않았으므로 건드리지 않는다.
-    detail = _api_get(f"/v1/expenses/{expense_id}")
-    status = detail["data"].get("approvalStatus", "")
+def _active_purposes() -> dict[int, dict]:
+    return {int(p["purposeId"]): p for p in _data("/v2/purposes?isActivated=true")}
+
+
+def _existing_answers(detail: dict, reqs: list[dict] | None = None) -> dict[str, list[str]]:
+    """저장된 답을 {요구항목id: [답]}으로. 응답의 id가 요구항목 id인지 실 API에서 확정되지 않아
+    용도의 요구항목 목록이 주어지면 id가 맞지 않을 때 item(항목명)으로 대응시킨다."""
+    req_ids = {str(r["id"]) for r in reqs or []}
+    by_item = {(r.get("item") or "").strip(): str(r["id"]) for r in reqs or [] if r.get("item")}
+    out = {}
+    for a in detail.get("purposeRequirementAnswers") or []:
+        key = str(a["id"]) if a.get("id") is not None else None
+        if reqs is not None and key not in req_ids:
+            key = by_item.get((a.get("item") or "").strip())
+        if key is None:
+            continue
+        ans = a.get("answer")
+        if isinstance(ans, str):
+            ans = [ans]
+        ans = [x for x in (ans or []) if isinstance(x, str) and x.strip()]
+        if ans:
+            out[key] = ans
+    return out
+
+
+def _participant_ids(detail: dict) -> list[int]:
+    ids = []
+    for u in detail.get("participants") or []:
+        if isinstance(u, dict) and u.get("userId") is not None:
+            ids.append(int(u["userId"]))
+    return ids
+
+
+def _external_users(detail: dict) -> list[dict]:
+    out = []
+    for u in detail.get("expenseExternalUsers") or []:
+        if isinstance(u, dict) and u.get("name"):
+            out.append({"name": u.get("name", ""), "company": u.get("company") or ""})
+    return out
+
+
+def _postcondition(saved: dict, expected: dict, reqs: list[dict]) -> list[str]:
+    problems = []
+    if saved.get("approvalStatus") != "SUBMITTED":
+        problems.append(f"status={saved.get('approvalStatus')!r} (기대 SUBMITTED)")
+    saved_pid = (saved.get("purpose") or {}).get("purposeId")
+    if saved_pid is None or int(saved_pid) != expected["purposeId"]:
+        problems.append(f"purposeId={saved_pid!r} (기대 {expected['purposeId']})")
+    if (saved.get("memo") or "") != (expected.get("memo") or ""):
+        problems.append("memo 불일치")
+    saved_answers = _existing_answers(saved, reqs)
+    for key, ans in (expected.get("purposeRequirementAnswerMap") or {}).items():
+        if saved_answers.get(key) != ans:
+            problems.append(f"필수항목 {key} 불일치")
+    if sorted(_participant_ids(saved)) != sorted(expected.get("participantIdList") or []):
+        problems.append("내부 참석자 불일치")
+    want_ext = sorted((u["name"], u.get("company") or "") for u in expected.get("externalUserList") or [])
+    got_ext = sorted((u["name"], u.get("company") or "") for u in _external_users(saved))
+    if want_ext != got_ext:
+        problems.append("외부 참석자 불일치")
+    return problems
+
+
+def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
+               participants: str | None = None, requirements: str | None = None,
+               dry_run: bool = False, external: str | None = None,
+               allow_submitted: bool = False, clear_memo: bool = False,
+               clear_participants: bool = False, clear_external: bool = False,
+               confirm_solo: bool = False) -> None:
+    eid = _int_arg(expense_id, "expenseId")
+    pid = _int_arg(purpose_id, "purposeId")
+    participant_ids = None
+    if participants is not None:
+        participant_ids = [_int_arg(p, "참석자 userId") for p in participants.split(",") if p.strip()]
+    external_users = _parse_external(external) if external is not None else None
+    req_map = _parse_requirements(requirements) if requirements else {}
+
+    me = _resolve_me()
+    purposes = _active_purposes()
+    purpose = purposes.get(pid)
+    if purpose is None:
+        _err(f"활성 용도 {pid}를 찾을 수 없습니다. purposes로 확인하세요.")
+    reqs = purpose.get("requirements") or []
+    req_ids = {str(r["id"]) for r in reqs}
+
+    unknown = sorted(set(req_map) - req_ids)
+    if unknown:
+        _err(f"용도 {pid}에 없는 필수항목 id: {unknown}", validIds=sorted(req_ids))
+    placeholders = sorted(k for k, v in req_map.items() if any(x in PLACEHOLDER_ANSWERS for x in v))
+    if placeholders:
+        _err("자리표시 값은 필수항목 답으로 쓸 수 없습니다. 실제 내용을 입력하세요.", requirementIds=placeholders)
+
+    if participant_ids:
+        member_status = {int(m["userId"]): m.get("status") for m in _data("/v1/members") if m.get("userId") is not None}
+        bad = [p for p in participant_ids if member_status.get(p) != "NORMAL"]
+        if bad:
+            _err("참석자 userId가 재직 사용자 목록에 없습니다.", userIds=bad)
+
+    # 사전 확인: 소유자 → 상태 → 원천 취소/0원
+    detail = _owned_detail(eid, me)
+    status = detail.get("approvalStatus", "")
     allowed = {"NOT_SUBMITTED", "SUBMITTED"} if allow_submitted else {"NOT_SUBMITTED"}
     if status not in allowed:
-        hint = "" if allow_submitted or status != "SUBMITTED" else " — 변경하려면 update 커맨드를 쓰세요"
-        _out({"error": f"Already {status}{hint}", "expenseId": int(expense_id)})
+        hint = " — 변경하려면 update 커맨드를 쓰세요" if (not allow_submitted and status == "SUBMITTED") else ""
+        _out({"skipped": True, "reason": f"Already {status}{hint}", "expenseId": eid})
         return
+    void_state = _source_void_state(detail)
+    if void_state in ("refund", "voided"):
+        _err(f"원천 기록상 취소/0원 이하({void_state}) 건이라 제출을 차단했습니다.", expenseId=eid)
 
-    if dry_run:
-        _out({
-            "dry_run": True,
-            "expenseId": int(expense_id),
-            "purposeId": int(purpose_id),
-            "memo": memo,
-            "participants": participants,
-            "external": _parse_external(external),
-            "requirements": req_map,
-            "status": "would_submit",
-        })
-        return
+    # 생략한 필드는 기존 값을 유지한다 (PUT은 덮어쓰기). 지우려면 --clear-* 를 명시.
+    preserved = []
+    if memo is None:
+        memo_val = "" if clear_memo else (detail.get("memo") or "")
+        if memo_val and not clear_memo:
+            preserved.append("memo")
+    else:
+        memo_val = memo
+    if participant_ids is None:
+        participant_ids = [] if clear_participants else _participant_ids(detail)
+        if participant_ids:
+            preserved.append("participants")
+    if external_users is None:
+        external_users = [] if clear_external else _external_users(detail)
+        if external_users:
+            preserved.append("external")
 
-    # 제출 (V2 body에 memo 포함되므로 별도 메모 PUT 불필요)
-    body: dict = {"purposeId": int(purpose_id)}
-    if participants:
-        body["participantIdList"] = [int(p.strip()) for p in participants.split(",") if p.strip()]
-    if external:
-        body["externalUserList"] = _parse_external(external)
-    if memo:
-        body["memo"] = memo
+    old_pid = (detail.get("purpose") or {}).get("purposeId")
+    if old_pid is not None and int(old_pid) == pid:
+        for k, v in _existing_answers(detail, reqs).items():
+            if k in req_ids and k not in req_map:
+                req_map[k] = v
+                preserved.append(f"requirement:{k}")
+
+    memo_routed = None
+    if pid in SERVICE_NAME_PURPOSES and memo is not None and memo_val and reqs:
+        service_key = str(reqs[0]["id"])
+        if service_key not in req_map:
+            req_map[service_key] = [memo_val]
+            memo_routed = service_key
+            memo_val = detail.get("memo") or ""   # 기존 메모는 유지
+
+    missing = [str(r["id"]) for r in reqs if r.get("isRequired") and not req_map.get(str(r["id"]))]
+    if missing:
+        _err("필수항목이 비어 있습니다. --requirements로 실제 값을 넣으세요.",
+             missingRequirementIds=missing,
+             requirements=[{"id": r["id"], "item": r.get("item", "")} for r in reqs])
+
+    amount = max(_amount_krw(detail), _num(detail.get("useAmount")) or 0.0)
+    limit = _num(purpose.get("limitAmount")) or 0.0
+    over_limit = bool(limit) and amount > limit
+    if over_limit and not participant_ids and not external_users and not confirm_solo:
+        _err("용도 한도를 넘는데 참석자가 없습니다. 함께한 사람을 --participants/--external로 넣거나, "
+             "본인 단독이 맞으면 --confirm-solo를 붙이세요.",
+             amount=amount, limitAmount=limit,
+             note="인당 계산 방식(결제자 포함 여부)은 회사 정책 확인 전이라 자동 판정하지 않습니다.")
+
+    body: dict = {"purposeId": pid}
+    if participant_ids:
+        body["participantIdList"] = participant_ids
+    if external_users:
+        body["externalUserList"] = external_users
+    if memo_val:
+        body["memo"] = memo_val
     if req_map:
         body["purposeRequirementAnswerMap"] = req_map
+    # 기존 참석자를 지우는 경우 빈 목록을 명시해 덮어쓴다.
+    if clear_participants:
+        body["participantIdList"] = []
+    if clear_external:
+        body["externalUserList"] = []
+    if clear_memo:
+        body["memo"] = ""
 
-    # V2 API 사용 — V1은 purposeRequirementAnswerMap 처리 시 400 반환
-    _api_put(f"/v2/expenses/{expense_id}", body)
+    checks = {
+        "owner": "verified (local, not authentication)",
+        "previousStatus": status,
+        "preservedFromExisting": preserved,
+        "memoRoutedToRequirement": memo_routed,
+        "overLimit": over_limit,
+        "soloConfirmed": bool(confirm_solo and over_limit),
+        "sourceState": void_state,
+    }
+    if dry_run:
+        _out({"dry_run": True, "expenseId": eid, "body": body, "checks": checks, "status": "would_submit"})
+        return
 
-    # 저장 결과 재조회 — 응답 200만으로 반영을 단정하지 않는다.
-    saved = _api_get(f"/v2/expenses/{expense_id}")["data"]
-    _out({
-        "success": True,
-        "expenseId": int(expense_id),
-        "purposeId": int(purpose_id),
+    put_error = None
+    try:
+        _request("PUT", f"/v2/expenses/{eid}", body)
+    except ApiError as e:
+        put_error = str(e)
+
+    # 오류가 났어도 실제 반영됐을 수 있으므로 재조회로 판정한다(같은 요청을 자동 재전송하지 않음).
+    saved = _data(f"/v2/expenses/{eid}")
+    expected = dict(body)
+    expected["memo"] = memo_val
+    expected.setdefault("participantIdList", [])
+    expected.setdefault("externalUserList", [])
+    problems = _postcondition(saved, expected, reqs)
+    result = {
+        "success": not problems,
+        "expenseId": eid,
+        "purposeId": pid,
         "previousStatus": status,
         "status": saved.get("approvalStatus"),
         "purpose": (saved.get("purpose") or {}).get("name"),
@@ -338,14 +660,22 @@ def cmd_submit(expense_id: str, purpose_id: str,
         "requirementAnswers": saved.get("purposeRequirementAnswers", []),
         "participants": [u.get("userName") for u in saved.get("participants") or []],
         "external": saved.get("expenseExternalUsers") or [],
-    })
+        "checks": checks,
+    }
+    if put_error:
+        result["putError"] = put_error
+    if problems:
+        result["postconditionFailures"] = problems
+        _out(result)
+        sys.exit(2)
+    _out(result)
 
 
 def cmd_purposes() -> None:
-    resp = _api_get("/v2/purposes?isActivated=true")
+    resp = _data("/v2/purposes?isActivated=true")
     purposes = []
-    for p in sorted(resp["data"], key=lambda x: x["name"]):
-        reqs = p.get("requirements", [])
+    for p in sorted(resp, key=lambda x: x["name"]):
+        reqs = p.get("requirements") or []
         purposes.append({
             "purposeId": p["purposeId"],
             "name": p["name"],
@@ -353,268 +683,194 @@ def cmd_purposes() -> None:
             "limitAmount": p.get("limitAmount", 0),
             "hasRequirements": len(reqs) > 0,
             "requirements": [
-                {
-                    "id": r["id"],
-                    "item": r.get("item", ""),
-                    "type": r.get("type", "TEXT"),
-                    "isRequired": r.get("isRequired", False),
-                    "guideDesc": r.get("guideDesc", ""),
-                }
+                {"id": r["id"], "item": r.get("item", ""), "type": r.get("type", "TEXT"),
+                 "isRequired": r.get("isRequired", False), "guideDesc": r.get("guideDesc", "")}
                 for r in reqs
-            ] if reqs else [],
+            ],
         })
     _out(purposes)
 
 
 def cmd_purpose_requirements(purpose_id: str) -> None:
-    """특정 용도의 필수항목 상세 조회. SELECT 타입이면 선택지도 함께 조회."""
-    pid = int(purpose_id)
-    resp = _api_get("/v2/purposes?isActivated=true")
-    target = None
-    for p in resp["data"]:
-        if p["purposeId"] == pid:
-            target = p
-            break
+    pid = _int_arg(purpose_id, "purposeId")
+    target = _active_purposes().get(pid)
     if not target:
-        _err(f"용도 ID {pid}를 찾을 수 없습니다.")
-
-    reqs = target.get("requirements", [])
+        _err(f"활성 용도 ID {pid}를 찾을 수 없습니다.")
     result_reqs = []
-    for r in reqs:
-        req_info: dict = {
-            "id": r["id"],
-            "item": r.get("item", ""),
-            "type": r.get("type", "TEXT"),
-            "isRequired": r.get("isRequired", False),
-            "guideDesc": r.get("guideDesc", ""),
+    for r in target.get("requirements") or []:
+        info: dict = {
+            "id": r["id"], "item": r.get("item", ""), "type": r.get("type", "TEXT"),
+            "isRequired": r.get("isRequired", False), "guideDesc": r.get("guideDesc", ""),
             "isAvailableInput": r.get("isAvailableInput", False),
         }
-        # SELECT/SELECT_MULTI 타입이면 선택지 조회
         if r.get("type") in ("SELECT", "SELECT_MULTI"):
-            opts_resp = _api_get(f"/v2/purposes/{pid}/requirements/{r['id']}")
-            req_info["options"] = opts_resp.get("data", [])
-        result_reqs.append(req_info)
-
-    _out({
-        "purposeId": pid,
-        "purposeName": target["name"],
-        "requirements": result_reqs,
-    })
+            info["options"] = _api_get(f"/v2/purposes/{pid}/requirements/{r['id']}").get("data", [])
+        result_reqs.append(info)
+    _out({"purposeId": pid, "purposeName": target["name"], "requirements": result_reqs})
 
 
 def cmd_members() -> None:
-    resp = _api_get("/v1/members")
     members = []
-    for m in sorted(resp["data"], key=lambda x: x["userName"]):
+    for m in sorted(_data("/v1/members"), key=lambda x: x.get("userName", "")):
         if m.get("status") != "NORMAL":
             continue
         members.append({
-            "userId": m["userId"],
-            "userName": m["userName"],
-            "email": m.get("email", ""),
+            "userId": m["userId"], "userName": m["userName"], "email": m.get("email", ""),
             "department": (m.get("department") or {}).get("name", ""),
         })
     _out(members)
 
 
-def cmd_rules(query: str = "") -> None:
+def _load_rules() -> list[dict]:
     rules_file = Path(__file__).resolve().parent.parent / "data" / "auto_rules.json"
     if not rules_file.exists():
         _err("auto_rules.json not found")
-
     with open(rules_file, encoding="utf-8") as f:
-        data = json.load(f)
+        return json.load(f).get("rules", [])
 
-    rules = data.get("rules", [])
+
+def cmd_rules(query: str = "") -> None:
+    rules = _load_rules()
     if query:
         q = query.lower()
-        rules = [
-            r for r in rules
-            if q in r.get("store_pattern", "").lower()
-            or q in r.get("purpose_name", "").lower()
-        ]
-
-    result = [
-        {
-            "pattern": r.get("store_pattern", ""),
-            "purpose": r.get("purpose_name", ""),
-            "memo": r.get("requirement_answer", ""),
-            "confidence": r.get("confidence", 0),
-        }
-        for r in rules[:50]
-    ]
+        rules = [r for r in rules if q in (r.get("store_pattern") or "").lower()
+                 or q in (r.get("purpose_name") or "").lower()]
+    result = [{"pattern": r.get("store_pattern", ""), "purpose": r.get("purpose_name", ""),
+               "memo": r.get("requirement_answer", ""), "confidence": r.get("confidence", 0)}
+              for r in rules[:50]]
     _out({"count": len(rules), "showing": len(result), "rules": result})
 
 
+def _pattern_matches(pattern: str, store: str) -> bool:
+    """대소문자 무시 포함 매칭. 4자 이하 영숫자 패턴(예: SR)은 단어 경계가 있어야 매칭."""
+    p, s = pattern.lower(), store.lower()
+    if not p:
+        return False
+    if len(p) <= 4 and re.fullmatch(r"[a-z0-9]+", p):
+        return re.search(rf"(?<![a-z0-9]){re.escape(p)}(?![a-z0-9])", s) is not None
+    return p in s
+
+
+def _command(args: list[str]) -> str:
+    return " ".join(shlex.quote(a) for a in args)
+
+
 def cmd_suggest(expense_id: str) -> None:
-    """경비 하나를 auto_rules로 자동 분류 추천."""
-    # 경비 상세 조회
-    resp = _api_get(f"/v2/expenses/{expense_id}")
-    e = resp["data"]
+    eid = _int_arg(expense_id, "expenseId")
+    me = _resolve_me()
+    e = _owned_detail(eid, me)
     store = e.get("storeName") or ""
-    amount = e.get("krwAmount", 0)
-    time_str = e.get("expenseTime") or "120000"
-    hour = int(time_str[:2]) if time_str and time_str[:2].isdigit() else 12
-    status = e.get("approvalStatus", "")
+    amount = _amount_krw(e)
+    time_str = str(e.get("expenseTime") or "")
+    hour = int(time_str[:2]) if time_str[:2].isdigit() else None
+    currency = e.get("currency", "KRW")
+    purposes = _active_purposes()
 
-    # 규칙 로드
-    rules_file = Path(__file__).resolve().parent.parent / "data" / "auto_rules.json"
-    if not rules_file.exists():
-        _err("auto_rules.json not found")
-    with open(rules_file, encoding="utf-8") as f:
-        rules_data = json.load(f)
+    hits = [r for r in _load_rules() if _pattern_matches(r.get("store_pattern") or "", store)]
+    # 봇과 같은 방향: 가장 긴(구체적인) 패턴 우선, 그다음 confidence
+    hits.sort(key=lambda r: (-len(r.get("store_pattern") or ""), -(r.get("confidence") or 0)))
 
-    # 용도 ID → 필수항목 캐시 (first match 필요 시 조회)
-    purposes_resp = _api_get("/v2/purposes")
-    purpose_req_map = {}  # {purposeId: [{id, item}, ...]}
-    for p in purposes_resp["data"]:
-        purpose_req_map[p.get("purposeId")] = p.get("requirements", [])
-
-    # 매칭
-    matches = []
-    for r in rules_data.get("rules", []):
-        pattern = r.get("store_pattern", "")
-        if not pattern:
+    matches, inactive = [], []
+    for r in hits:
+        pid = r.get("purpose_id")
+        p = purposes.get(pid)
+        if p is None:
+            inactive.append({"pattern": r.get("store_pattern"), "purposeId": pid, "purposeName": r.get("purpose_name")})
             continue
-        if pattern.lower() in store.lower():
-            pid = r.get("purpose_id")
-            # 시간 기반 점심/야근 자동 전환 (12556 점심 ↔ 12555 야근)
-            if pid == 12556 and hour >= 18:
-                pid = 12555  # 야근식비
-            elif pid == 12555 and hour < 18:
-                pid = 12556  # 점심식비
-            requirements = purpose_req_map.get(pid, [])
-            req_answer_map = None
-            answer = r.get("requirement_answer") or ""
-            if requirements and answer:
-                req_answer_map = {str(req["id"]): [answer] for req in requirements}
-            # 이름도 전환 반영
-            name_override = None
-            if pid == 12555:
-                name_override = "야근식비"
-            elif pid == 12556:
-                name_override = "점심식비"
-            matches.append({
-                "pattern": pattern,
-                "purposeId": pid,
-                "purposeName": name_override or r.get("purpose_name", ""),
-                "confidence": r.get("confidence", 0),
-                "memo": r.get("requirement_answer", ""),
-                "requirementAnswerMap": req_answer_map,
-                "requirements": [{"id": req["id"], "item": req["item"]} for req in requirements],
-            })
-
-    # 시간 기반 한국 식비 추천 (규칙에 없을 때 보조)
-    if not matches:
-        s = store.upper()
-        # 한국 음식점/배달 추정 (USD가 아니고 한글 포함)
-        is_korean_food = (
-            e.get("currency", "KRW") == "KRW"
-            and any(k in store for k in ["쿠팡이츠", "식당", "김밥", "국수", "삼계탕", "닭갈비", "양꼬치", "덮밥", "한식", "카페", "커피", "맥주"])
-        )
-        if is_korean_food:
-            if hour >= 18:
-                matches.append({
-                    "pattern": "(시간 기반 추정)",
-                    "purposeId": 12555,
-                    "purposeName": "야근식비",
-                    "confidence": 0.6,
-                    "memo": "야근식비",
-                    "requirementAnswerMap": None,
-                    "requirements": [],
-                })
+        reqs = p.get("requirements") or []
+        answer = (r.get("requirement_answer") or "").strip()
+        req_map = None
+        needs = []
+        if reqs:
+            if len(reqs) == 1 and answer and answer not in PLACEHOLDER_ANSWERS:
+                req_map = {str(reqs[0]["id"]): [answer]}
             else:
-                matches.append({
-                    "pattern": "(시간 기반 추정)",
-                    "purposeId": 12556,
-                    "purposeName": "점심식비",
-                    "confidence": 0.6,
-                    "memo": "점심식비",
-                    "requirementAnswerMap": None,
-                    "requirements": [],
-                })
+                needs = [{"id": q["id"], "item": q.get("item", "")} for q in reqs]
+        warnings = []
+        if currency == "KRW" and str(p.get("name", "")).startswith(_FOREIGN_ENTITY_PREFIXES):
+            warnings.append("원화 결제에 미국법인 용도가 추천되었습니다. 법인을 확인하세요.")
+        matches.append({
+            "pattern": r.get("store_pattern"), "purposeId": pid, "purposeName": p.get("name"),
+            "confidence": r.get("confidence", 0), "requirementAnswerMap": req_map,
+            "needsInput": needs, "warnings": warnings,
+        })
 
-    # confidence 내림차순 정렬
-    matches.sort(key=lambda x: -x["confidence"])
+    meal_candidates = None
+    korean_food = currency == "KRW" and any(k in store for k in [
+        "쿠팡이츠", "식당", "김밥", "국수", "삼계탕", "닭갈비", "양꼬치", "덮밥", "한식", "카페", "커피", "맥주"])
+    top = matches[0] if matches else None
+    if (top and top["purposeId"] in MEAL_PURPOSES) or (not matches and korean_food):
+        meal_candidates = [
+            {"purposeId": pid, "purposeName": purposes[pid]["name"]} for pid in (12556, 12555) if pid in purposes]
 
-    # 제출 명령어 예시 생성
-    submit_cmd = ""
-    if matches:
-        top = matches[0]
-        parts = [f"gowid.py submit {expense_id} {top['purposeId']}"]
-        if top["memo"] and not top["requirementAnswerMap"]:
-            parts.append(f"--memo '{top['memo']}'")
+    blockers = []
+    if meal_candidates is not None:
+        blockers.append("식비 시각 기준(점심/야근)은 회사 정책 확인 전이라 자동으로 정하지 않습니다. 사용자에게 어느 용도인지 확인하세요.")
+    if top and top["needsInput"]:
+        blockers.append("필수항목 실제 값이 필요합니다.")
+    if top:
+        limit = _num((purposes.get(top["purposeId"]) or {}).get("limitAmount")) or 0.0
+        if limit and amount > limit:
+            blockers.append("용도 한도를 넘습니다. 함께한 사람을 확인하세요(본인 단독이면 --confirm-solo).")
+    if _source_void_state(e) in ("refund", "voided"):
+        blockers.append("원천 기록상 취소/0원 이하 건입니다. 제출 대상이 아닙니다.")
+    if e.get("approvalStatus") != "NOT_SUBMITTED":
+        blockers.append(f"현재 상태가 {e.get('approvalStatus')}입니다. submit 대상이 아닙니다.")
+
+    argv = None
+    if top and not blockers:
+        argv = ["gowid.py", "submit", str(eid), str(top["purposeId"])]
         if top["requirementAnswerMap"]:
-            parts.append(f"--requirements '{json.dumps(top['requirementAnswerMap'], ensure_ascii=False)}'")
-        submit_cmd = " ".join(parts)
+            argv += ["--requirements", json.dumps(top["requirementAnswerMap"], ensure_ascii=False)]
 
     _out({
-        "expenseId": int(expense_id),
-        "storeName": store,
-        "amount": amount,
-        "currency": e.get("currency", "KRW"),
-        "date": e.get("expenseDate", ""),
-        "hour": hour,
-        "status": status,
-        "matches": matches[:5],
-        "suggestedCommand": submit_cmd,
+        "expenseId": eid, "storeName": store, "amount": amount, "currency": currency,
+        "date": e.get("expenseDate", ""), "hour": hour, "status": e.get("approvalStatus", ""),
+        "matches": matches[:5], "inactivePurposeMatches": inactive[:5],
+        "mealCandidates": meal_candidates, "blockers": blockers,
+        "suggestedArgv": argv,
+        "suggestedCommand": _command(argv) if argv else None,
     })
 
 
-# ── Main ──────────────────────────────────────────────────
-
-# API 키 없이 실행 가능한 커맨드
 _LOCAL_COMMANDS = {"setup", "rules", "help"}
 
 
 def cmd_setup() -> None:
-    """첫 실행 셋업 가이드."""
-    email = _git_email()
-    has_key = bool(API_KEY)
-
+    email, source = _git_email()
     print("=" * 50)
     print("  Gowid 경비 스킬 셋업 가이드")
     print("=" * 50)
     print()
-
-    # Step 1: git email
-    if email:
-        print(f"[OK] git email: {email}")
-    else:
-        print("[!!] git config user.email 이 설정되지 않았습니다.")
-        print("     git config --global user.email \"your@eoeoeo.net\"")
+    print(f"[OK] 본인 이메일: {email} ({source})" if email else
+          "[!!] 본인 이메일 미설정 — git config --global user.email \"your@eoeoeo.net\" 또는 GOWID_EMAIL")
+    print(f"[{'OK' if API_KEY else '!!'}] GOWID_API_KEY: {'설정됨 (환경변수)' if API_KEY else '미설정'}")
     print()
-
-    # Step 2: API Key
-    print(f"[OK] GOWID_API_KEY: {'설정됨 (환경변수)' if os.environ.get('GOWID_API_KEY') else '미설정 — 환경변수 GOWID_API_KEY 필요'}")
-    print()
-
-    # Step 3: 연결 확인
-    if has_key and email:
+    if API_KEY and email:
         print("연결 확인 중...")
         try:
-            resp = _api_get("/v1/members")
-            for m in resp["data"]:
-                if m.get("email", "").lower() == email.lower():
-                    print(f"[OK] Gowid 사용자 확인: {m['userName']} ({email})")
-                    print()
-                    print("셋업 완료! Claude Code에서 '내 경비 보여줘'라고 말해보세요.")
-                    return
-            print(f"[!!] {email} 에 매칭되는 Gowid 사용자가 없습니다.")
-            print("     Gowid에 등록된 이메일과 git email이 일치하는지 확인하세요.")
-        except SystemExit:
+            members = _request("GET", "/v1/members")["data"]
+        except (ApiError, KeyError, TypeError):
             print("[!!] API 연결 실패 — 키가 올바른지 확인하세요.")
-    elif has_key:
-        print("git email 설정 후 다시 실행하세요: python3 gowid.py setup")
-    else:
-        print("API 키 설정 후 다시 실행하세요: python3 gowid.py setup")
+            return
+        for m in members:
+            if (m.get("email") or "").lower() == email.lower():
+                ok = m.get("status") == "NORMAL"
+                print(f"[{'OK' if ok else '!!'}] Gowid 사용자 확인: {m.get('userName')} (status={m.get('status')})")
+                if ok:
+                    print("\n셋업 완료! '내 경비 보여줘'라고 말해보세요.")
+                return
+        print(f"[!!] {email} 에 매칭되는 Gowid 사용자가 없습니다.")
+
+
+def _usage() -> None:
+    print(__doc__)
 
 
 def main() -> None:
     args = sys.argv[1:]
     cmd = args[0] if args else "help"
 
-    # API 키 사전 체크 (환경변수 GOWID_API_KEY 필수)
     if cmd not in _LOCAL_COMMANDS and not API_KEY:
         print("API 키 오류. python3 gowid.py setup 을 실행하세요.")
         sys.exit(1)
@@ -624,41 +880,47 @@ def main() -> None:
     elif cmd == "whoami":
         cmd_whoami()
     elif cmd == "my-expenses":
-        month, show_all = "", False
+        month = ""
         i = 1
         while i < len(args):
+            if args[i] == "--all":
+                _err("--all(전체 사용자 조회)은 보안상 제거되었습니다. 관리자 조회는 Gowid 관리자 웹을 쓰세요.")
             if args[i] == "--month" and i + 1 < len(args):
                 month = args[i + 1]; i += 2
-            elif args[i] == "--all":
-                show_all = True; i += 1
             else:
-                i += 1
-        cmd_my_expenses(month=month, show_all=show_all)
+                _err(f"알 수 없는 옵션: {args[i]}")
+        cmd_my_expenses(month=month)
     elif cmd == "detail":
         if len(args) < 2:
             _err("Usage: gowid.py detail <expenseId>")
         cmd_detail(args[1])
     elif cmd in ("submit", "update"):
         if len(args) < 3:
-            _err(f"Usage: gowid.py {cmd} <expenseId> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]")
-        eid, pid = args[1], args[2]
-        memo, participants, requirements, dry_run, external = "", "", "", False, ""
+            _err(f"Usage: gowid.py {cmd} <expenseId> <purposeId> [옵션]")
+        opts: dict = {}
+        value_flags = {"--memo": "memo", "--participants": "participants",
+                       "--requirements": "requirements", "--external": "external"}
+        bool_flags = {"--dry-run": "dry_run", "--clear-memo": "clear_memo",
+                      "--clear-participants": "clear_participants",
+                      "--clear-external": "clear_external", "--confirm-solo": "confirm_solo"}
         i = 3
         while i < len(args):
-            if args[i] == "--memo" and i + 1 < len(args):
-                memo = args[i + 1]; i += 2
-            elif args[i] == "--participants" and i + 1 < len(args):
-                participants = args[i + 1]; i += 2
-            elif args[i] == "--requirements" and i + 1 < len(args):
-                requirements = args[i + 1]; i += 2
-            elif args[i] == "--external" and i + 1 < len(args):
-                external = args[i + 1]; i += 2
-            elif args[i] == "--dry-run":
-                dry_run = True; i += 1
+            a = args[i]
+            if a in value_flags:
+                if i + 1 >= len(args):
+                    _err(f"{a} 값이 없습니다.")
+                opts[value_flags[a]] = args[i + 1]; i += 2
+            elif a in bool_flags:
+                opts[bool_flags[a]] = True; i += 1
             else:
-                i += 1
-        cmd_submit(eid, pid, memo, participants, requirements, dry_run,
-                   external=external, allow_submitted=(cmd == "update"))
+                _err(f"알 수 없는 옵션: {a}")
+        if opts.get("clear_memo") and "memo" in opts:
+            _err("--memo와 --clear-memo는 함께 쓸 수 없습니다.")
+        if opts.get("clear_participants") and "participants" in opts:
+            _err("--participants와 --clear-participants는 함께 쓸 수 없습니다.")
+        if opts.get("clear_external") and "external" in opts:
+            _err("--external과 --clear-external은 함께 쓸 수 없습니다.")
+        cmd_submit(args[1], args[2], allow_submitted=(cmd == "update"), **opts)
     elif cmd == "suggest":
         if len(args) < 2:
             _err("Usage: gowid.py suggest <expenseId>")
@@ -674,26 +936,7 @@ def main() -> None:
     elif cmd == "rules":
         cmd_rules(args[1] if len(args) > 1 else "")
     else:
-        print("Usage: gowid.py <command>")
-        print()
-        print("Commands:")
-        print("  setup                    첫 실행 셋업 가이드")
-        print("  whoami                   현재 사용자 확인 (git email → Gowid user)")
-        print("  my-expenses [--month YYYYMM] [--all]")
-        print("                           미제출 경비 조회 (기본: 이번 달, 본인)")
-        print("                           --month 202603  → 특정 월 조회")
-        print("                           --all           → 전체 사용자 (관리자용)")
-        print("  detail <id>              경비 상세 조회")
-        print("  submit <id> <purposeId> [--memo M] [--participants P] [--external E] [--requirements JSON] [--dry-run]")
-        print("                           경비 제출 (필수항목 포함). --external '이름:회사,이름' 외부 참석자")
-        print("  update <id> <purposeId> [submit과 같은 옵션]")
-        print("                           이미 제출(SUBMITTED)된 건의 용도·필수항목·참석자 변경")
-        print("  suggest <id>             auto_rules 기반 용도 자동 추천 + 제출 명령어 생성")
-        print("  purposes                 용도 목록 (필수항목 상세 포함)")
-        print("  purpose-requirements <purposeId>")
-        print("                           특정 용도의 필수항목 상세 조회")
-        print("  members                  팀원 목록 (참석자 선택용)")
-        print("  rules [query]            자동 분류 규칙 조회")
+        _usage()
 
 
 if __name__ == "__main__":
