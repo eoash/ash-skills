@@ -46,7 +46,7 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py whoami
 ```
 
 - 본인 이메일은 `GOWID_EMAIL`(있으면 우선) 또는 `git config user.email`에서 읽고, Gowid 멤버 목록에서 **재직(NORMAL) 상태이고 이메일이 정확히 한 명과 일치**할 때만 본인으로 인정한다.
-- `detail`·`suggest`·`submit`·`update`는 경비 상세의 소유자 userId가 본인 userId와 같을 때만 진행한다. 소유자를 확인할 수 없으면 차단한다. `my-expenses`도 이름이 아니라 상세의 소유자 ID로 최종 확인한다.
+- `detail`·`suggest`·`submit`·`update`는 경비 상세의 소유자가 본인일 때만 진행한다. 실제 경비 상세의 사용자 객체(`user`, `card.cardUser`)에는 userId가 없어서 **이메일로 대조**한다(userId가 오는 응답이면 userId 우선). 소유자를 확인할 수 없으면 차단한다. `my-expenses`도 이름이 아니라 상세의 소유자 이메일로 최종 확인한다.
 - 전체 사용자 조회(`--all`)는 제거했다.
 - **이것은 인증이 아니다.** API 키는 회사 공용이고, 이메일 설정은 로컬에서 바꿀 수 있다. 이 헬퍼를 정상 사용하는 사람이 실수로 남의 경비를 다루는 것은 막지만, 키를 가진 사람이 다른 사람 이메일을 설정하거나 API를 직접 호출하는 것은 막지 못한다. 진짜 본인 제한에는 서버측 인증 중계나 사용자별 자격증명이 필요하다.
 
@@ -173,9 +173,9 @@ python3 ~/.claude/skills/gowid-expense/scripts/gowid.py update <expenseId> <purp
 
 - `submit`은 미제출(NOT_SUBMITTED)만 처리하고 SUBMITTED는 건너뛴다 → 변경은 `update`로
 - `update`는 NOT_SUBMITTED·SUBMITTED만 허용. APPROVED 등 승인 이후 상태는 API 변경을 검증하지 않았으므로 Gowid 웹 안내
-- 지정하지 않은 메모·참석자·외부 참석자는 기존 값을 다시 보내 유지한다. 용도가 같으면 기존 필수항목 답도 유지한다. 지우려면 `--clear-memo`, `--clear-participants`, `--clear-external`을 명시한다
+- 지정하지 않은 메모·참석자·외부 참석자는 기존 값을 다시 보내 유지한다. 용도가 같으면 기존 필수항목 답도 유지한다. 기존 용도·참석자·외부 참석자를 위 방식으로 확정할 수 없으면 조용히 버리지 않고 제출 전에 멈춘다(`--requirements`/`--participants`/`--external`로 다시 지정하거나 `--clear-*`). 지우려면 `--clear-memo`, `--clear-participants`, `--clear-external`을 명시한다
 - 용도를 바꾸면 새 용도의 필수항목을 `--requirements`로 넣어야 한다 (비어 있으면 차단)
-- submit/update 모두 저장 후 다시 조회해 status=SUBMITTED, 용도, 메모, 필수항목, 내부·외부 참석자가 요청과 같은지 검사한다. 하나라도 다르면 `success:false`, `postconditionFailures`, 종료코드 2로 끝난다. 쓰기 요청이 오류를 내도 재조회로 실제 반영 여부를 판정하며, 같은 요청을 자동으로 다시 보내지 않는다
+- submit/update 모두 저장 후 다시 조회해 status=SUBMITTED, 용도, 메모, 필수항목, 내부·외부 참석자가 요청과 같은지 검사한다. 실제 경비 상세의 용도에는 purposeId가 없으므로, 용도는 전체 용도 목록에서 **이름+카테고리(+활성 여부)가 정확히 하나로 맞을 때만** 확인된 것으로 본다(이름만으로는 판정하지 않음). 참석자도 userId가 없어 이메일→멤버 userId가 한 명으로 맞을 때만 인정한다. 확인이 안 되면 실패로 보고한다. 하나라도 다르면 `success:false`, `postconditionFailures`, 종료코드 2로 끝난다. 쓰기 요청이 오류를 내도 재조회로 실제 반영 여부를 판정하며, 같은 요청을 자동으로 다시 보내지 않는다
 - 제출 취소(미제출로 되돌리기) API는 없다 → Gowid 웹
 
 ### 4. 용도 목록 조회
