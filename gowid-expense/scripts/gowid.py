@@ -169,11 +169,21 @@ def _int_arg(value: str, label: str) -> int:
 # ── 본인 식별 / 소유자 검사 ──────────────────────────────
 
 
+_MEMBERS_CACHE: list[dict] | None = None
+
+
+def _members() -> list[dict]:
+    global _MEMBERS_CACHE
+    if _MEMBERS_CACHE is None:
+        _MEMBERS_CACHE = _data("/v1/members")
+    return _MEMBERS_CACHE
+
+
 def _resolve_me() -> dict:
     email, source = _git_email()
     if not email:
         _err("본인 이메일을 알 수 없습니다. git config user.email 또는 GOWID_EMAIL을 설정하세요.")
-    members = _data("/v1/members")
+    members = _members()
     matches = [m for m in members if (m.get("email") or "").strip().lower() == email.lower()]
     if not matches:
         _err(f"{email} 에 매칭되는 Gowid 사용자가 없습니다. 등록 이메일을 확인하세요.")
@@ -191,6 +201,9 @@ def _resolve_me() -> dict:
 
 
 def _owner_of(detail: dict) -> tuple[str, object] | None:
+    """경비 소유자. 실제 /v2/expenses/{id}의 user·card.cardUser에는 userId가 없고
+    email·userName·status·isActivated만 온다(2026-11-13 확인) → 보통 이메일로 판정한다.
+    userId가 오는 응답이면 userId를 우선한다."""
     card = detail.get("card") or {}
     candidates = [detail.get("user") or {}, card.get("cardUser") or {}]
     for u in candidates:
@@ -416,7 +429,9 @@ def cmd_detail(expense_id: str) -> None:
         "cardNumber": card_num[-4:] if card_num else "",
         "cardAlias": card.get("alias", ""),
         "userName": user.get("userName", ""),
-        "participants": d.get("participants", []),
+        # 실제 참석자 객체에는 전화번호 등 불필요한 개인정보가 있어 이름·이메일만 출력한다.
+        "participants": [{"userName": u.get("userName", ""), "email": u.get("email", "")}
+                         for u in d.get("participants") or [] if isinstance(u, dict)],
         "external": d.get("expenseExternalUsers") or [],
         "requirementAnswers": d.get("purposeRequirementAnswers", []),
         "comments": d.get("comments", []),
@@ -459,19 +474,74 @@ def _active_purposes() -> dict[int, dict]:
     return {int(p["purposeId"]): p for p in _data("/v2/purposes?isActivated=true")}
 
 
+def _purpose_catalog() -> list[dict]:
+    """활성·비활성을 포함한 전체 용도 목록(이름 중복 판정용)."""
+    return [p for p in _data("/v2/purposes") if p.get("purposeId") is not None]
+
+
+def _same_category(saved_cat: dict, cat: dict) -> bool | None:
+    """True/False, 비교 근거가 없으면 None."""
+    if saved_cat.get("categoryId") is not None and cat.get("categoryId") is not None:
+        return str(saved_cat["categoryId"]) == str(cat["categoryId"])
+    if saved_cat.get("name") and cat.get("name"):
+        return str(saved_cat["name"]).strip() == str(cat["name"]).strip()
+    return None
+
+
+def _resolve_saved_purpose(saved: dict | None, catalog: list[dict]) -> tuple[int | None, str | None]:
+    """경비에 저장된 용도 → (purposeId, 문제).
+    실제 경비 상세의 purpose에는 purposeId가 없고 name·isActivated·hasRequirement·limitAmount·
+    limitType·category{categoryId,name}만 온다. ID가 있으면 ID를 쓰고, 없으면 전체 용도 목록에서
+    이름 + 카테고리(+활성 여부)가 정확히 하나로 맞을 때만 인정한다. 이름만으로는 판정하지 않는다."""
+    if not saved:
+        return None, "저장된 용도 없음"
+    if saved.get("purposeId") is not None:
+        try:
+            return int(saved["purposeId"]), None
+        except (TypeError, ValueError):
+            return None, "purposeId 형식 오류"
+    name = (saved.get("name") or "").strip()
+    saved_cat = saved.get("category") or {}
+    if not name:
+        return None, "용도 이름 없음"
+    if saved_cat.get("categoryId") is None and not saved_cat.get("name"):
+        return None, "용도 카테고리 정보가 없어 이름만으로 확정하지 않음"
+    cands = []
+    for p in catalog:
+        if (p.get("name") or "").strip() != name:
+            continue
+        if _same_category(saved_cat, p.get("category") or {}) is not True:
+            continue
+        if isinstance(saved.get("isActivated"), bool) and isinstance(p.get("isActivated"), bool) \
+                and saved["isActivated"] != p["isActivated"]:
+            continue
+        cands.append(p)
+    if len(cands) == 1:
+        return int(cands[0]["purposeId"]), None
+    if not cands:
+        return None, f"용도 목록에서 '{name}'(카테고리 일치)를 찾지 못함"
+    return None, f"용도 '{name}'가 같은 카테고리에 {len(cands)}개라 불명확"
+
+
 def _existing_answers(detail: dict, reqs: list[dict] | None = None) -> dict[str, list[str]]:
-    """저장된 답을 {요구항목id: [답]}으로. 응답의 id가 요구항목 id인지 실 API에서 확정되지 않아
-    용도의 요구항목 목록이 주어지면 id가 맞지 않을 때 item(항목명)으로 대응시킨다."""
+    """저장된 답을 {요구항목id: [답]}으로.
+    실제 형태: [{purposeRequirementId:int, purposeRequirementName:str, answers:[str]}] (2026-11-13 확인).
+    구형 {id, item, answer}도 받는다. 용도의 요구항목 목록이 주어지면 id가 그 목록에 없을 때
+    항목명으로 대응시키고, 그래도 없으면 버린다."""
     req_ids = {str(r["id"]) for r in reqs or []}
     by_item = {(r.get("item") or "").strip(): str(r["id"]) for r in reqs or [] if r.get("item")}
     out = {}
     for a in detail.get("purposeRequirementAnswers") or []:
-        key = str(a["id"]) if a.get("id") is not None else None
+        if not isinstance(a, dict):
+            continue
+        rid = a.get("purposeRequirementId", a.get("id"))
+        rname = a.get("purposeRequirementName", a.get("item"))
+        key = str(rid) if rid is not None else None
         if reqs is not None and key not in req_ids:
-            key = by_item.get((a.get("item") or "").strip())
+            key = by_item.get((rname or "").strip())
         if key is None:
             continue
-        ans = a.get("answer")
+        ans = a.get("answers", a.get("answer"))
         if isinstance(ans, str):
             ans = [ans]
         ans = [x for x in (ans or []) if isinstance(x, str) and x.strip()]
@@ -480,40 +550,72 @@ def _existing_answers(detail: dict, reqs: list[dict] | None = None) -> dict[str,
     return out
 
 
-def _participant_ids(detail: dict) -> list[int]:
-    ids = []
-    for u in detail.get("participants") or []:
-        if isinstance(u, dict) and u.get("userId") is not None:
+def _participant_ids(detail: dict) -> tuple[list[int], int]:
+    """저장된 내부 참석자 → (userId 목록, 확인 못 한 수).
+    userId가 없으면(실제 사용자 객체는 email·userName·status만 오는 형태) 이메일로 멤버 목록에서
+    정확히 한 명일 때만 userId로 바꾼다. 못 찾거나 이메일이 중복이면 '확인 못 함'으로 센다."""
+    raw = detail.get("participants") or []
+    if not raw:
+        return [], 0
+    by_email: dict[str, list[int]] = {}
+    for m in _members():
+        e = (m.get("email") or "").strip().lower()
+        if e and m.get("userId") is not None:
+            by_email.setdefault(e, []).append(int(m["userId"]))
+    ids, unresolved = [], 0
+    for u in raw:
+        if not isinstance(u, dict):
+            unresolved += 1
+            continue
+        if u.get("userId") is not None:
             ids.append(int(u["userId"]))
-    return ids
+            continue
+        hit = by_email.get((u.get("email") or "").strip().lower(), [])
+        if len(hit) == 1:
+            ids.append(hit[0])
+        else:
+            unresolved += 1
+    return ids, unresolved
 
 
-def _external_users(detail: dict) -> list[dict]:
-    out = []
+def _external_users(detail: dict) -> tuple[list[dict], int]:
+    """저장된 외부 참석자 → ([{name, company}], 해석 못 한 수).
+    실제 항목 형태는 아직 관측되지 않았다. name이 없는 등 모르는 형태는 건너뛰지 않고 센다."""
+    out, unknown = [], 0
     for u in detail.get("expenseExternalUsers") or []:
-        if isinstance(u, dict) and u.get("name"):
-            out.append({"name": u.get("name", ""), "company": u.get("company") or ""})
-    return out
+        if isinstance(u, dict) and isinstance(u.get("name"), str) and u["name"].strip():
+            out.append({"name": u["name"].strip(), "company": (u.get("company") or "").strip()})
+        else:
+            unknown += 1
+    return out, unknown
 
 
-def _postcondition(saved: dict, expected: dict, reqs: list[dict]) -> list[str]:
+def _postcondition(saved: dict, expected: dict, reqs: list[dict], catalog: list[dict]) -> list[str]:
     problems = []
     if saved.get("approvalStatus") != "SUBMITTED":
         problems.append(f"status={saved.get('approvalStatus')!r} (기대 SUBMITTED)")
-    saved_pid = (saved.get("purpose") or {}).get("purposeId")
-    if saved_pid is None or int(saved_pid) != expected["purposeId"]:
-        problems.append(f"purposeId={saved_pid!r} (기대 {expected['purposeId']})")
+    saved_pid, why = _resolve_saved_purpose(saved.get("purpose"), catalog)
+    if saved_pid is None:
+        problems.append(f"저장된 용도 확인 불가: {why}")
+    elif saved_pid != expected["purposeId"]:
+        problems.append(f"용도 불일치: 저장 {saved_pid} (기대 {expected['purposeId']})")
     if (saved.get("memo") or "") != (expected.get("memo") or ""):
         problems.append("memo 불일치")
     saved_answers = _existing_answers(saved, reqs)
     for key, ans in (expected.get("purposeRequirementAnswerMap") or {}).items():
         if saved_answers.get(key) != ans:
             problems.append(f"필수항목 {key} 불일치")
-    if sorted(_participant_ids(saved)) != sorted(expected.get("participantIdList") or []):
+    saved_ids, unresolved = _participant_ids(saved)
+    if unresolved:
+        problems.append(f"저장된 내부 참석자 {unresolved}명을 확인할 수 없음")
+    elif sorted(saved_ids) != sorted(expected.get("participantIdList") or []):
         problems.append("내부 참석자 불일치")
     want_ext = sorted((u["name"], u.get("company") or "") for u in expected.get("externalUserList") or [])
-    got_ext = sorted((u["name"], u.get("company") or "") for u in _external_users(saved))
-    if want_ext != got_ext:
+    saved_ext, ext_unknown = _external_users(saved)
+    got_ext = sorted((u["name"], u.get("company") or "") for u in saved_ext)
+    if ext_unknown:
+        problems.append(f"저장된 외부 참석자 {ext_unknown}건의 형태를 해석할 수 없음")
+    elif want_ext != got_ext:
         problems.append("외부 참석자 불일치")
     return problems
 
@@ -544,7 +646,7 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
     if unknown:
         _err(f"용도 {pid}에 없는 필수항목 id: {unknown}", validIds=sorted(req_ids))
     if participant_ids:
-        member_status = {int(m["userId"]): m.get("status") for m in _data("/v1/members") if m.get("userId") is not None}
+        member_status = {int(m["userId"]): m.get("status") for m in _members() if m.get("userId") is not None}
         bad = [p for p in participant_ids if member_status.get(p) != "NORMAL"]
         if bad:
             _err("참석자 userId가 재직 사용자 목록에 없습니다.", userIds=bad)
@@ -572,16 +674,34 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
     else:
         memo_val = memo
     if participant_ids is None:
-        participant_ids = [] if clear_participants else _participant_ids(detail)
+        if clear_participants:
+            participant_ids = []
+        else:
+            participant_ids, unresolved = _participant_ids(detail)
+            if unresolved:
+                _err("기존 내부 참석자를 멤버 목록에서 한 명으로 확인할 수 없어 보존할 수 없습니다. "
+                     "--participants로 다시 지정하거나 --clear-participants를 명시하세요.", unresolved=unresolved)
         if participant_ids:
             preserved.append("participants")
     if external_users is None:
-        external_users = [] if clear_external else _external_users(detail)
+        if clear_external:
+            external_users = []
+        else:
+            external_users, ext_unknown = _external_users(detail)
+            if ext_unknown:
+                _err("기존 외부 참석자 형태를 해석할 수 없어 보존할 수 없습니다. "
+                     "--external로 다시 지정하거나 --clear-external을 명시하세요.", unknown=ext_unknown)
         if external_users:
             preserved.append("external")
 
-    old_pid = (detail.get("purpose") or {}).get("purposeId")
-    if old_pid is not None and int(old_pid) == pid:
+    catalog = _purpose_catalog()
+    old_pid = None
+    if detail.get("purpose"):
+        old_pid, old_why = _resolve_saved_purpose(detail.get("purpose"), catalog)
+        if old_pid is None and _existing_answers(detail) and not requirements:
+            _err("기존 용도를 확정할 수 없어 기존 필수항목 답을 안전하게 보존할 수 없습니다. "
+                 "--requirements로 답을 다시 지정하세요.", reason=old_why)
+    if old_pid is not None and old_pid == pid:
         for k, v in _existing_answers(detail, reqs).items():
             if k in req_ids and k not in req_map:
                 req_map[k] = v
@@ -661,7 +781,7 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
     expected["memo"] = memo_val
     expected.setdefault("participantIdList", [])
     expected.setdefault("externalUserList", [])
-    problems = _postcondition(saved, expected, reqs)
+    problems = _postcondition(saved, expected, reqs, catalog)
     result = {
         "success": not problems,
         "expenseId": eid,

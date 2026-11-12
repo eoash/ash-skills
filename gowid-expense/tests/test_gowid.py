@@ -23,22 +23,24 @@ SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "gowid.py"
 ME = {"userId": 10, "userName": "Me", "email": "me@example.com", "status": "NORMAL"}
 OTHER = {"userId": 11, "userName": "Other User", "email": "other@example.com", "status": "NORMAL"}
 SAME_NAME = {"userId": 13, "userName": "Me", "email": "me2@example.com", "status": "NORMAL"}
-LEFT = {"userId": 12, "userName": "Left", "email": "left@example.com", "status": "RESIGNED"}
+LEFT = {"userId": 12, "userName": "Left", "email": "left@example.com", "status": "INACTIVE"}
 
 PURPOSES = [
-    {"purposeId": 12556, "name": "점심식비", "limitAmount": 12000, "requirements": []},
-    {"purposeId": 12555, "name": "야근식비", "limitAmount": 12000, "requirements": []},
-    {"purposeId": 12551, "name": "업무교통비", "limitAmount": 0, "requirements": [
+    {"purposeId": 12556, "name": "점심식비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 1, "name": "식비"}, "limitAmount": 12000, "requirements": []},
+    {"purposeId": 12555, "name": "야근식비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 1, "name": "식비"}, "limitAmount": 12000, "requirements": []},
+    {"purposeId": 12551, "name": "업무교통비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 2, "name": "일반"}, "limitAmount": 0, "requirements": [
         {"id": 126, "item": "출발지", "type": "TEXT", "isRequired": True},
         {"id": 127, "item": "도착지", "type": "TEXT", "isRequired": True}]},
-    {"purposeId": 12547, "name": "접대비", "limitAmount": 0, "requirements": [
+    {"purposeId": 12547, "name": "접대비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 2, "name": "일반"}, "limitAmount": 0, "requirements": [
         {"id": 2052, "item": "소속/이름", "type": "TEXT", "isRequired": True}]},
-    {"purposeId": 12532, "name": "IT서비스 이용료", "limitAmount": 0, "requirements": [
+    {"purposeId": 12532, "name": "IT서비스 이용료", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 2, "name": "일반"}, "limitAmount": 0, "requirements": [
         {"id": 360, "item": "서비스,프로그램명 기입", "type": "TEXT", "isRequired": False}]},
-    {"purposeId": 97864, "name": "미국법인-보험비", "limitAmount": 0, "requirements": [
+    {"purposeId": 97864, "name": "미국법인-보험비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 2, "name": "일반"}, "limitAmount": 0, "requirements": [
         {"id": 900, "item": "어떤 항목인지", "type": "TEXT", "isRequired": True}]},
-    {"purposeId": 12531, "name": "서류발급비", "limitAmount": 0, "requirements": [
+    {"purposeId": 12531, "name": "서류발급비", "isActivated": True, "limitType": "PERSON", "category": {"categoryId": 2, "name": "일반"}, "limitAmount": 0, "requirements": [
         {"id": 500, "item": "프로젝트명", "type": "TEXT", "isRequired": True}]},
+    {"purposeId": 94177, "name": "미국법인-식비", "isActivated": False, "limitType": "NONE",
+     "category": {"categoryId": 9, "name": "미국법인"}, "limitAmount": 0, "requirements": []},
 ]
 
 
@@ -48,7 +50,26 @@ def _clean_env() -> dict:
 
 
 def _u(m):
-    return {"userId": m["userId"], "userName": m["userName"], "email": m["email"]}
+    """실제 /v2/expenses 사용자·참석자 객체 형태(2026-11-13 관측): userId 없음. 값은 가상."""
+    return {"userName": m["userName"], "email": m["email"], "status": m["status"],
+            "isActivated": m["status"] == "NORMAL", "mobileNumber": "010-0000-0000",
+            "isInvitedUser": False, "isContractor": False, "position": None}
+
+
+def _pp(pid, purposes=None):
+    """실제 경비 상세의 purpose 형태: purposeId 없음."""
+    p = next(x for x in (purposes or PURPOSES) if x["purposeId"] == pid)
+    return {"name": p["name"], "isActivated": p.get("isActivated", True),
+            "hasRequirement": bool(p.get("requirements")), "limitAmount": p.get("limitAmount", 0),
+            "limitType": p.get("limitType", "NONE"), "category": dict(p.get("category") or {})}
+
+
+def _ans(pid, answers, purposes=None):
+    """실제 purposeRequirementAnswers 형태."""
+    p = next(x for x in (purposes or PURPOSES) if x["purposeId"] == pid)
+    names = {str(r["id"]): r["item"] for r in p.get("requirements") or []}
+    return [{"purposeRequirementId": int(k), "purposeRequirementName": names.get(str(k), ""), "answers": v}
+            for k, v in answers.items()]
 
 
 def _exp(eid, owner, store, krw, *, status="NOT_SUBMITTED", time="123000", date=None, currency="KRW", **kw):
@@ -72,9 +93,9 @@ def base_state():
         104: _exp(104, ME, "취소된가게", 0),           # 원천 순액 0원(상세)
         106: _exp(106, ME, "환불가게", 8000),
         107: _exp(107, ME, "비비큐", 80000, status="SUBMITTED",
-                  purpose={"purposeId": 12547, "name": "접대비"}, memo="기존메모",
-                  participants=[_u(OTHER)], expenseExternalUsers=[{"name": "이한빈", "company": "ABC"}],
-                  purposeRequirementAnswers=[{"id": 2052, "item": "소속/이름", "answer": ["ABC 이한빈"]}]),
+                  purpose=_pp(12547), memo="기존메모",
+                  participants=[_u(OTHER)], expenseExternalUsers=[{"name": "홍길동", "company": "가상회사"}],
+                  purposeRequirementAnswers=_ans(12547, {"2052": ["가상회사 홍길동"]})),
         108: _exp(108, None, "Ownerless", 1000),
         109: _exp(109, ME, "CLASSROOM CAFE", 5000, time="175900"),
         110: _exp(110, ME, "NEXT INSURANCE", 1000, currency="USD"),
@@ -141,7 +162,10 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/v1/members":
             return self._send({"data": st["members"]})
         if p == "/v2/purposes":
-            return self._send({"data": st["purposes"]})
+            ps = st["purposes"]
+            if q.get("isActivated") == ["true"]:
+                ps = [x for x in ps if x.get("isActivated", True)]
+            return self._send({"data": ps})
         if p == "/v2/expense-statements":
             page, size = int(q["page"][0]), int(q["size"][0])
             rows = st["rows"]
@@ -165,18 +189,22 @@ class Handler(BaseHTTPRequestHandler):
             return self._send({}, 500)
         if mode != "noop":
             # 최악의 덮어쓰기 모델: body에 없는 필드는 지워진다.
+            # 실제 응답 형태로 저장: purposeId 없는 purpose, userId 없는 참석자, 실제형 답
             pid = body["purposeId"]
-            name = next(p["name"] for p in st["purposes"] if p["purposeId"] == pid)
-            e["purpose"] = {"purposeId": pid, "name": name}
+            e["purpose"] = _pp(pid, st["purposes"])
+            if mode == "no_category":
+                e["purpose"].pop("category", None)
             e["approvalStatus"] = "SUBMITTED"
             e["memo"] = body.get("memo")
             ids = body.get("participantIdList") or []
             e["participants"] = [_u(m) for m in st["members"] if m["userId"] in ids]
+            if mode == "participant_unknown_email":
+                e["participants"].append({"userName": "Ghost", "email": "ghost@example.com", "status": "NORMAL"})
             e["expenseExternalUsers"] = body.get("externalUserList") or []
             answers = body.get("purposeRequirementAnswerMap") or {}
             if mode == "drop_answers":
                 answers = {}
-            e["purposeRequirementAnswers"] = [{"id": int(k), "item": "", "answer": v} for k, v in answers.items()]
+            e["purposeRequirementAnswers"] = _ans(pid, answers, st["purposes"])
         if mode == "error_after_apply":
             return self._send({}, 500)
         self._send({"data": None})
@@ -194,7 +222,7 @@ class GowidCliTest(unittest.TestCase):
         cls.server.shutdown()
 
     def setUp(self):
-        Handler.state = base_state()
+        Handler.state = copy.deepcopy(base_state())
 
     @property
     def st(self):
@@ -416,9 +444,8 @@ class GowidCliTest(unittest.TestCase):
 
     def test_placeholder_via_preserved_answer_blocked(self):
         e = self.st["expenses"][111]
-        e.update(approvalStatus="SUBMITTED", purpose={"purposeId": 12551, "name": "업무교통비"},
-                 purposeRequirementAnswers=[{"id": 126, "item": "출발지", "answer": ["업무 이동"]},
-                                            {"id": 127, "item": "도착지", "answer": ["판교"]}])
+        e.update(approvalStatus="SUBMITTED", purpose=_pp(12551),
+                 purposeRequirementAnswers=_ans(12551, {"126": ["업무 이동"], "127": ["판교"]}))
         rc, out, _ = self.run_cli("update", "111", "12551", "--memo", "x")
         self.assertEqual(rc, 1)
         self.assertEqual(out["requirementIds"], ["126"])
@@ -433,6 +460,112 @@ class GowidCliTest(unittest.TestCase):
             self.assertNotIn("Traceback", raw)
             self.assertIn("--month", out["error"])
         self.assertFalse(any("expense-statements" in x[1] for x in self.st["log"]))
+
+
+    # ── 실제 API 형태 (2026-11-13 관측, 값은 가상) ──
+    def test_real_shape_owner_by_email(self):
+        self.assertNotIn("userId", self.st["expenses"][101]["user"])
+        self.assertNotIn("userId", self.st["expenses"][101]["card"]["cardUser"])
+        rc, out, _ = self.run_cli("detail", "101")
+        self.assertEqual(rc, 0, out)
+        rc, out, _ = self.run_cli("detail", "103")   # 같은 이름, 다른 이메일
+        self.assertEqual(rc, 1)
+        self.assertIn("본인 경비가 아닙니다", out["error"])
+
+    def test_detail_hides_participant_extra_fields(self):
+        rc, out, raw = self.run_cli("detail", "107")
+        self.assertEqual(out["participants"], [{"userName": "Other User", "email": "other@example.com"}])
+        self.assertNotIn("010-0000-0000", raw)
+
+    def test_real_shape_update_preserve_and_postcondition(self):
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(out["success"])
+        body = self.puts()[0][2]
+        self.assertEqual(body["participantIdList"], [11])
+        self.assertEqual(body["purposeRequirementAnswerMap"], {"2052": ["가상회사 홍길동"]})
+
+    def test_legacy_shape_fallback(self):
+        e = _exp(150, ME, "레거시가게", 50000, status="SUBMITTED",
+                 purpose={"purposeId": 12547, "name": "접대비"}, memo="m",
+                 participants=[{"userId": 11, "userName": "Other User"}],
+                 purposeRequirementAnswers=[{"id": 2052, "item": "소속/이름", "answer": ["가상회사 김가상"]}])
+        e["user"]["userId"] = 10
+        self.st["expenses"][150] = e
+        rc, out, _ = self.run_cli("update", "150", "12547", "--dry-run")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(out["body"]["participantIdList"], [11])
+        self.assertEqual(out["body"]["purposeRequirementAnswerMap"], {"2052": ["가상회사 김가상"]})
+
+    def test_purpose_duplicate_name_same_category_postcondition_fails_closed(self):
+        dup = dict(self.st["purposes"][0], purposeId=99901)
+        self.st["purposes"].append(dup)
+        rc, out, _ = self.run_cli("submit", "109", "12556")
+        self.assertEqual(rc, 2)
+        self.assertFalse(out["success"])
+        self.assertTrue(any("불명확" in p for p in out["postconditionFailures"]))
+
+    def test_purpose_duplicate_inactive_or_other_category_resolves(self):
+        self.st["purposes"].append(dict(self.st["purposes"][0], purposeId=99902, isActivated=False))
+        self.st["purposes"].append(dict(self.st["purposes"][0], purposeId=99903,
+                                        category={"categoryId": 77, "name": "다른분류"}))
+        rc, out, _ = self.run_cli("submit", "109", "12556")
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(out["success"])
+
+    def test_saved_purpose_without_category_fails_closed(self):
+        self.st["put_mode"] = "no_category"
+        rc, out, _ = self.run_cli("submit", "109", "12556")
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("카테고리" in p for p in out["postconditionFailures"]))
+
+    def test_update_ambiguous_old_purpose_blocks_answer_loss(self):
+        self.st["purposes"].append(dict(next(p for p in self.st["purposes"] if p["purposeId"] == 12547), purposeId=99904))
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 1)
+        self.assertIn("기존 용도를 확정할 수 없어", out["error"])
+        self.assertEqual(self.puts(), [])
+        rc, out, _ = self.run_cli("update", "107", "12547", "--requirements", '{"2052":["가상회사 홍길동"]}', "--dry-run")
+        self.assertEqual(rc, 0, out)
+
+    def test_participant_email_unknown_or_duplicate_blocks(self):
+        self.st["expenses"][107]["participants"] = [{"userName": "Ghost", "email": "ghost@example.com", "status": "NORMAL"}]
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 1)
+        self.assertIn("참석자", out["error"])
+        self.st["expenses"][107]["participants"] = [_u(OTHER)]
+        self.st["members"].append(dict(OTHER, userId=98))   # 같은 이메일 두 명
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.puts(), [])
+        rc, out, _ = self.run_cli("update", "107", "12547", "--participants", "11", "--dry-run")
+        self.assertEqual(rc, 0, out)
+
+    def test_malformed_participant_blocks_preservation(self):
+        self.st["expenses"][107]["participants"] = ["unknown-shape"]
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("참석자", out["error"])
+        self.assertEqual(self.puts(), [])
+
+    def test_postcondition_unresolvable_saved_participant(self):
+        self.st["put_mode"] = "participant_unknown_email"
+        rc, out, _ = self.run_cli("submit", "109", "12556", "--participants", "11")
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("참석자" in p for p in out["postconditionFailures"]))
+
+    def test_unknown_external_shape_blocks_preservation(self):
+        self.st["expenses"][107]["expenseExternalUsers"] = [{"externalName": "형태모름"}]
+        rc, out, _ = self.run_cli("update", "107", "12547")
+        self.assertEqual(rc, 1)
+        self.assertIn("외부 참석자", out["error"])
+        rc, out, _ = self.run_cli("update", "107", "12547", "--clear-external", "--dry-run")
+        self.assertEqual(rc, 0, out)
+
+    def test_inactive_member_status_rejected(self):
+        rc, out, _ = self.run_cli("whoami", email="left@example.com")
+        self.assertEqual(rc, 1)
+        self.assertEqual(out["status"], "INACTIVE")
 
     # ── postcondition ──
     def test_postcondition_success(self):
@@ -485,17 +618,17 @@ class GowidCliTest(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         body = self.puts()[0][2]
         self.assertEqual(body["participantIdList"], [11])
-        self.assertEqual(body["externalUserList"], [{"name": "이한빈", "company": "ABC"}])
+        self.assertEqual(body["externalUserList"], [{"name": "홍길동", "company": "가상회사"}])
         self.assertEqual(body["memo"], "기존메모")
-        self.assertEqual(body["purposeRequirementAnswerMap"], {"2052": ["ABC 이한빈"]})
+        self.assertEqual(body["purposeRequirementAnswerMap"], {"2052": ["가상회사 홍길동"]})
         self.assertTrue(out["success"])
 
     def test_update_preserves_answers_matched_by_item_name(self):
         # 응답 answer의 id가 요구항목 id가 아니어도 항목명으로 보존·검증한다.
-        self.st["expenses"][107]["purposeRequirementAnswers"] = [{"id": 77777, "item": "소속/이름", "answer": ["ABC 이한빈"]}]
+        self.st["expenses"][107]["purposeRequirementAnswers"] = [{"id": 77777, "item": "소속/이름", "answer": ["가상회사 홍길동"]}]
         rc, out, _ = self.run_cli("update", "107", "12547", "--dry-run")
         self.assertEqual(rc, 0, out)
-        self.assertEqual(out["body"]["purposeRequirementAnswerMap"], {"2052": ["ABC 이한빈"]})
+        self.assertEqual(out["body"]["purposeRequirementAnswerMap"], {"2052": ["가상회사 홍길동"]})
 
     def test_service_memo_routing_keeps_existing_memo(self):
         self.st["expenses"][113]["memo"] = "기존 설명"
