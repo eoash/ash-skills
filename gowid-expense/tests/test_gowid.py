@@ -372,6 +372,68 @@ class GowidCliTest(unittest.TestCase):
         self.assertIn("취소", out["error"])
         self.assertEqual(self.puts(), [])
 
+    # ── 부모 검수 보완: 가승인·외화 금액·최종 자리표시·연도 범위 ──
+    def test_preauthorized_submit_update_blocked(self):
+        self.st["expenses"][140] = _exp(140, ME, "가승인 테스트가게", 5000)
+        self.st["expenses"][141] = _exp(141, ME, "가승인 테스트가게", 5000, status="SUBMITTED",
+                                        purpose={"purposeId": 12556, "name": "점심식비"})
+        for args in (("submit", "140", "12556"), ("update", "141", "12556")):
+            rc, out, _ = self.run_cli(*args)
+            self.assertEqual(rc, 1, args)
+            self.assertIn("가승인", out["error"])
+        rc, out, _ = self.run_cli("suggest", "140")
+        self.assertTrue(any("가승인" in b for b in out["blockers"]))
+        self.assertEqual(self.puts(), [])
+
+    def test_foreign_amount_without_krw_fails_closed_for_limit(self):
+        self.st["expenses"][142] = _exp(142, ME, "PHO VIET", None, currency="VND", useAmount=250000)
+        rc, out, _ = self.run_cli("submit", "142", "12556")
+        self.assertEqual(rc, 1)
+        self.assertIn("원화 금액", out["error"])
+        rc, out, _ = self.run_cli("suggest", "142")
+        self.assertIsNone(out["amount"])
+        self.assertEqual(self.puts(), [])
+
+    def test_foreign_large_use_amount_uses_krw_for_limit(self):
+        # VND 수치(100,000)가 커도 원화 5,000원이면 한도(12,000) 미만
+        self.st["expenses"][143] = _exp(143, ME, "PHO VIET", 5000, currency="VND", useAmount=100000)
+        rc, out, _ = self.run_cli("submit", "143", "12556", "--dry-run")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(out["checks"]["amountKrw"], 5000)
+        self.assertFalse(out["checks"]["overLimit"])
+
+    def test_foreign_no_krw_allowed_when_no_limit(self):
+        self.st["expenses"][144] = _exp(144, ME, "GITHUB", None, currency="USD", useAmount=20)
+        rc, out, _ = self.run_cli("submit", "144", "12532", "--requirements", '{"360":["GitHub"]}', "--dry-run")
+        self.assertEqual(rc, 0, out)
+        self.assertIsNone(out["checks"]["amountKrw"])
+
+    def test_placeholder_via_memo_routing_blocked(self):
+        rc, out, _ = self.run_cli("submit", "113", "12532", "--memo", "IT서비스 정기결제")
+        self.assertEqual(rc, 1)
+        self.assertIn("자리표시", out["error"])
+        self.assertEqual(self.puts(), [])
+
+    def test_placeholder_via_preserved_answer_blocked(self):
+        e = self.st["expenses"][111]
+        e.update(approvalStatus="SUBMITTED", purpose={"purposeId": 12551, "name": "업무교통비"},
+                 purposeRequirementAnswers=[{"id": 126, "item": "출발지", "answer": ["업무 이동"]},
+                                            {"id": 127, "item": "도착지", "answer": ["판교"]}])
+        rc, out, _ = self.run_cli("update", "111", "12551", "--memo", "x")
+        self.assertEqual(rc, 1)
+        self.assertEqual(out["requirementIds"], ["126"])
+        rc, out, _ = self.run_cli("update", "111", "12551", "--requirements", '{"126":["강남역"]}', "--dry-run")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(out["body"]["purposeRequirementAnswerMap"], {"126": ["강남역"], "127": ["판교"]})
+
+    def test_month_year_range_graceful(self):
+        for bad in ("000001", "0000-12", "999912", "1999-12"):
+            rc, out, raw = self.run_cli("my-expenses", "--month", bad)
+            self.assertEqual(rc, 1, bad)
+            self.assertNotIn("Traceback", raw)
+            self.assertIn("--month", out["error"])
+        self.assertFalse(any("expense-statements" in x[1] for x in self.st["log"]))
+
     # ── postcondition ──
     def test_postcondition_success(self):
         rc, out, _ = self.run_cli("submit", "109", "12556")

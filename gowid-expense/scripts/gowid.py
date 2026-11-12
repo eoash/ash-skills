@@ -244,11 +244,15 @@ def _source_void_state(row: dict) -> str | None:
     return None
 
 
-def _amount_krw(row: dict) -> float:
+def _amount_krw(row: dict) -> float | None:
+    """원화 금액. krwAmount가 있으면 그것, 없으면 통화가 KRW일 때만 useAmount.
+    외화(USD/VND/JPY 등) useAmount는 원화가 아니므로 대입하지 않고 None(확인 필요)."""
     krw = _num(row.get("krwAmount"))
     if krw is not None:
         return krw
-    return _num(row.get("useAmount")) or 0.0
+    if (row.get("currency") or "KRW").upper() == "KRW":
+        return _num(row.get("useAmount"))
+    return None
 
 
 # ── 월/페이지 ─────────────────────────────────────────────
@@ -260,6 +264,8 @@ def _month_range(month: str) -> tuple[str, str, str]:
         if not m:
             _err(f"--month 형식이 잘못되었습니다: {month!r} (예: 202603 또는 2026-03)")
         y, mo = int(m.group(1)), int(m.group(2))
+        if not 2000 <= y <= 2100:
+            _err(f"--month 연도 범위가 잘못되었습니다: {month!r} (2000~2100)")
     else:
         now = datetime.now()
         y, mo = now.year, now.month
@@ -537,10 +543,6 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
     unknown = sorted(set(req_map) - req_ids)
     if unknown:
         _err(f"용도 {pid}에 없는 필수항목 id: {unknown}", validIds=sorted(req_ids))
-    placeholders = sorted(k for k, v in req_map.items() if any(x in PLACEHOLDER_ANSWERS for x in v))
-    if placeholders:
-        _err("자리표시 값은 필수항목 답으로 쓸 수 없습니다. 실제 내용을 입력하세요.", requirementIds=placeholders)
-
     if participant_ids:
         member_status = {int(m["userId"]): m.get("status") for m in _data("/v1/members") if m.get("userId") is not None}
         bad = [p for p in participant_ids if member_status.get(p) != "NORMAL"]
@@ -558,6 +560,8 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
     void_state = _source_void_state(detail)
     if void_state in ("refund", "voided"):
         _err(f"원천 기록상 취소/0원 이하({void_state}) 건이라 제출을 차단했습니다.", expenseId=eid)
+    if void_state == "preauthorized":
+        _err("가승인 건이라 제출/변경을 차단했습니다. 최종 매입 확정 후 다시 처리하세요.", expenseId=eid)
 
     # 생략한 필드는 기존 값을 유지한다 (PUT은 덮어쓰기). 지우려면 --clear-* 를 명시.
     preserved = []
@@ -591,15 +595,23 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
             memo_routed = service_key
             memo_val = detail.get("memo") or ""   # 기존 메모는 유지
 
+    # 자리표시 검사는 기존 답 보존·메모 이동까지 합친 최종 값에 대해 한다(우회 차단).
+    placeholders = sorted(k for k, v in req_map.items() if any(x.strip() in PLACEHOLDER_ANSWERS for x in v))
+    if placeholders:
+        _err("자리표시 값은 필수항목 답으로 쓸 수 없습니다. 실제 내용을 입력하세요.", requirementIds=placeholders)
+
     missing = [str(r["id"]) for r in reqs if r.get("isRequired") and not req_map.get(str(r["id"]))]
     if missing:
         _err("필수항목이 비어 있습니다. --requirements로 실제 값을 넣으세요.",
              missingRequirementIds=missing,
              requirements=[{"id": r["id"], "item": r.get("item", "")} for r in reqs])
 
-    amount = max(_amount_krw(detail), _num(detail.get("useAmount")) or 0.0)
+    amount = _amount_krw(detail)
     limit = _num(purpose.get("limitAmount")) or 0.0
-    over_limit = bool(limit) and amount > limit
+    if limit and amount is None and not participant_ids and not external_users:
+        _err("원화 금액(krwAmount)이 없어 용도 한도와 비교할 수 없습니다. Gowid에서 원화 확정 금액을 확인한 뒤 처리하세요.",
+             currency=detail.get("currency"), limitAmount=limit)
+    over_limit = bool(limit) and amount is not None and amount > limit
     if over_limit and not participant_ids and not external_users and not confirm_solo:
         _err("용도 한도를 넘는데 참석자가 없습니다. 함께한 사람을 --participants/--external로 넣거나, "
              "본인 단독이 맞으면 --confirm-solo를 붙이세요.",
@@ -628,6 +640,7 @@ def cmd_submit(expense_id: str, purpose_id: str, *, memo: str | None = None,
         "previousStatus": status,
         "preservedFromExisting": preserved,
         "memoRoutedToRequirement": memo_routed,
+        "amountKrw": amount,
         "overLimit": over_limit,
         "soloConfirmed": bool(confirm_solo and over_limit),
         "sourceState": void_state,
@@ -810,10 +823,15 @@ def cmd_suggest(expense_id: str) -> None:
         blockers.append("필수항목 실제 값이 필요합니다.")
     if top:
         limit = _num((purposes.get(top["purposeId"]) or {}).get("limitAmount")) or 0.0
-        if limit and amount > limit:
+        if limit and amount is None:
+            blockers.append("원화 금액이 없어 용도 한도와 비교할 수 없습니다. 원화 확정 금액을 확인하세요.")
+        elif limit and amount > limit:
             blockers.append("용도 한도를 넘습니다. 함께한 사람을 확인하세요(본인 단독이면 --confirm-solo).")
-    if _source_void_state(e) in ("refund", "voided"):
+    void_state = _source_void_state(e)
+    if void_state in ("refund", "voided"):
         blockers.append("원천 기록상 취소/0원 이하 건입니다. 제출 대상이 아닙니다.")
+    elif void_state == "preauthorized":
+        blockers.append("가승인 건입니다. 최종 매입 확정 후 처리하세요.")
     if e.get("approvalStatus") != "NOT_SUBMITTED":
         blockers.append(f"현재 상태가 {e.get('approvalStatus')}입니다. submit 대상이 아닙니다.")
 
